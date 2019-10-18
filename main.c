@@ -9,6 +9,6 @@ int main() {
     structure_calculate(ptr);
     vfs_create("test.dat",ptr);
     free(ptr);
-    
+
     return 0;
 }
