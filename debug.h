@@ -85,13 +85,4 @@ void log_error(char *format, ...);
  */
 void log_fatal(char *format, ...);
 
-/**
- * Wrapper pro funkci printf, výpis pouze při DEBUG=TRUE
- * a DEBUG_LEVEL >= 1
- *
- * @param format formát textu
- * @param ... parametry formátování
- */
-void log_print(int level, char *format, ...);
-
 #endif //KIV_ZOS_DEBUG_H
