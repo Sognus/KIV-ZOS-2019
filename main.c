@@ -7,6 +7,7 @@ int main() {
     const int32_t disk_size = 629145600;                                // 600MB
     struct superblock *ptr = superblock_impl_alloc(disk_size);
     structure_calculate(ptr);
+    superblock_print(ptr);
     vfs_create("test.dat",ptr);
     free(ptr);
 

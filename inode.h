@@ -30,4 +30,11 @@ struct inode {
     int32_t indirect2;         // 2. nepřímý odkaz (odkaz - odkaz - datové bloky)
 };
 
+/**
+ * Vypíše obsah struktury inode
+ *
+ * @param ptr ukazatel na strukturu inode
+ */
+void inode_print(struct inode *ptr);
+
 #endif //KIV_ZOS_INODE_H

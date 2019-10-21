@@ -160,3 +160,26 @@ bool superblock_check(struct superblock *ptr){
     return TRUE;
 }
 
+/**
+ * Vypíše obsah struktury superblock
+ *
+ * @param ptr ukazatel na strukturu
+ */
+void superblock_print(struct superblock *ptr) {
+    if (ptr == NULL) {
+        log_trace("Ukazatel na strukturu superblock je NULL!\n");
+        return;
+    }
+
+    log_info("*** SUPERBLOCK\n");
+    log_info("Signature: %s\n", ptr->signature);
+    log_info("Volume descriptor: %s\n", ptr->volume_descriptor);
+    log_info("Disk size: %d\n", ptr->disk_size);
+    log_info("Cluster size: %d\n", ptr->cluster_size);
+    log_info("Cluster count: %d\n", ptr->cluster_count);
+    log_info("Bitmap start address: %d\n", ptr->bitmap_start_address);
+    log_info("Inode start address: %d\n", ptr->inode_start_address);
+    log_info("Data start address: %d\n", ptr->data_start_address);
+    log_info("*** SUPERBLOCK END\n");
+}
+

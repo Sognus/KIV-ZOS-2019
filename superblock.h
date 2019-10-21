@@ -81,4 +81,11 @@ bool superblock_set_volume_descriptor(struct superblock *ptr, char *volume_descr
  */
 bool superblock_check(struct superblock *ptr);
 
+/**
+ * Vypíše obsah struktury superblock
+ *
+ * @param ptr ukazatel na strukturu
+ */
+void superblock_print(struct superblock *ptr);
+
 #endif //KIV_ZOS_SUPER_H
