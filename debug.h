@@ -15,12 +15,30 @@
 #define DEBUG TRUE
 #define DEBUG_LEVEL 0
 
+// Chování při zápisu do logovacího souboru
+#define LOG_MODE_APPEND "a"
+#define LOG_MODE_REWRITE "w+"
+
+// Nastavení logovacího souboru
+#define LOG_FILE "vfs.log"
+#define LOG_FILE_ENABLED TRUE
+#define LOG_FILE_TIME_ENABLED TRUE
+#define LOG_MODE_CURRENT LOG_MODE_APPEND
+
+// Nastavení výpisu do terminálu
+#define STDOUT_ENABLED TRUE
+#define STDOUT_TIME_ENABLED FALSE
+
+// Definice levelů výpisu
 #define LOG_ALL 0
 #define LOG_TRACE 1
 #define LOG_DEBUG 2
 #define LOG_INFO 3
 #define LOG_ERROR 4
 #define LOG_FATAL 5
+
+// Definice formátování
+#define LOG_TIME_FORMAT "%d.%m.%Y %H:%M:%S"
 
 /**
  * Wrapper pro funkci printf, výpis pouze při DEBUG=TRUE

@@ -58,3 +58,4 @@ cmake-build-debug/
 # VFS files
 test.dat
 vfs.dat
+*.log
