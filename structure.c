@@ -1,6 +1,15 @@
 #include "structure.h"
 #include <string.h>
-#include <unistd.h>
+
+
+// Podmíněné vkládání hlavičkových souborů
+#ifdef _WIN32
+    #include <io.h>
+    #include <fileapi.h>
+    #include <rpc.h>
+#else
+    #include <unistd.h>
+#endif
 
 
 /**
@@ -41,7 +50,7 @@ bool structure_calculate(struct superblock *superblock_ptr) {
 
     // Výpočet velikosti hlavičky a datové části
     int32_t vfs_size = superblock_ptr->disk_size;
-    int32_t vfs_head_size = (int32_t)(ceil((double)(vfs_size)*((double)(IMPL_NON_DATA_PERCENTAGE)/100)));
+    int32_t vfs_head_size = (int32_t)(floor((double)(vfs_size)*((double)(IMPL_NON_DATA_PERCENTAGE)/100)));
     int32_t vfs_data_size = vfs_size - vfs_head_size;
 
     // DEBUG výpisy
@@ -49,14 +58,14 @@ bool structure_calculate(struct superblock *superblock_ptr) {
     debug_print("structure_calculate: Velikost datove casti -> %d\n", vfs_data_size);
 
     // Výpočet velikosti clusterů
-    int32_t vfs_cluster_count = (int32_t)(ceil((double)(vfs_data_size)/(double)(vfs_cluster_size)));
+    int32_t vfs_cluster_count = (int32_t)(floor((double)(vfs_data_size)/(double)(vfs_cluster_size)));
     debug_print("structure_calculate: Pocet clusteru -> %d\n", vfs_cluster_count);
 
     // Výpočet adres
     int32_t vfs_bitmap_address = sizeof(struct superblock) + 1;
     int32_t vfs_inode_address = vfs_bitmap_address + (vfs_cluster_count * sizeof(int8_t)) + 1;
     int32_t vfs_head_available = vfs_head_size - vfs_inode_address;
-    int32_t vfs_inode_count = (int32_t)(ceil((double)(vfs_head_available/(double)(sizeof(struct inode)))));
+    int32_t vfs_inode_count = (int32_t)(floor((double)(vfs_head_available/(double)(sizeof(struct inode)))));
     int32_t vfs_data_start = vfs_inode_address + vfs_head_available + 1;
 
     debug_print("structure_calculate: Adresa bitmapy -> %d\n", vfs_bitmap_address);
@@ -83,12 +92,11 @@ bool structure_calculate(struct superblock *superblock_ptr) {
  */
 void file_set_size(FILE *vfs_file, int32_t size){
     #ifdef _WIN32
-        // Zápis prázdných dat do zbytku souboru
-        int32_t used = sizeof(struct superblock);
-        while(used < superblock_ptr->disk_size){
-            fputc(0, vfs_file);
-            used++;
-        }
+        int fileno = _fileno(vfs_file);
+        HANDLE handle = (HANDLE) _get_osfhandle(fileno);
+        SetFilePointer(handle, size - sizeof(struct superblock), 0, FILE_END);
+        SetEndOfFile(handle);
+        CloseHandle(handle);
     #else
         int fd = fileno(vfs_file);
         ftruncate(fd, size);
@@ -139,6 +147,8 @@ bool vfs_create(char *vfs_filename, struct superblock *superblock_ptr) {
     // Zápis superbloku do souboru
     fseek(vfs_file, 0, SEEK_SET);
     fwrite(superblock_ptr, sizeof(struct superblock), 1, vfs_file);
+    // Manuální uvolnění bufferu kvůli WIN přístupu
+    fflush(vfs_file);
     // Nastavení velikosti souboru pro WIN a LINUX
     file_set_size(vfs_file, superblock_ptr->disk_size);
     // Uzavření souboru po zápisu

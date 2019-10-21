@@ -78,6 +78,8 @@ bool superblock_set_signature(struct superblock *ptr, char signature[9]){
         return FALSE;
     }
 
+    // Vyčištění dat
+    memset(ptr->signature, 0, sizeof(ptr->signature));
     // Zápis dat
     strcpy(ptr->signature, signature);
     return TRUE;
@@ -104,6 +106,8 @@ bool superblock_set_volume_descriptor(struct superblock *ptr, char *volume_descr
         return FALSE;
     }
 
+    // Vyčištění dat
+    memset(ptr->volume_descriptor, 0, sizeof(ptr->volume_descriptor));
     // Zápis dat
     strcpy(ptr->volume_descriptor, volume_descriptor);
     return TRUE;
