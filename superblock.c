@@ -21,7 +21,7 @@ struct superblock* superblock_impl_alloc(int32_t disk_size){
     struct superblock *ptr = malloc(sizeof(struct superblock));
 
     if(ptr == NULL){
-        debug_print("superblock_impl_alloc: Nepodarilo se alokovat pamet!\n");
+        log_debug("superblock_impl_alloc: Nepodarilo se alokovat pamet!\n");
         return NULL;
     }
 
@@ -44,7 +44,7 @@ struct superblock* superblock_alloc(int32_t disk_size, int32_t cluster_size, cha
     struct superblock *ptr = malloc(sizeof(struct superblock));
 
     if(ptr == NULL){
-        debug_print("superblock_impl_alloc: Nepodarilo se alokovat pamet!\n");
+        log_debug("superblock_impl_alloc: Nepodarilo se alokovat pamet!\n");
         return NULL;
     }
 
@@ -67,14 +67,14 @@ struct superblock* superblock_alloc(int32_t disk_size, int32_t cluster_size, cha
 bool superblock_set_signature(struct superblock *ptr, char signature[9]){
     // Ověření existence struktury
     if(ptr == NULL){
-        debug_print("superblock_set_volume_descriptor: Ukazatel na strukturu nemuze byt NULL!\n");
+        log_debug("superblock_set_volume_descriptor: Ukazatel na strukturu nemuze byt NULL!\n");
         return FALSE;
     }
 
     // Ověření délky řetězce
     if(strlen(signature) < 1 || strlen(signature) > 9)
     {
-        debug_print("superblock_set_volume_descriptor: Vstupni retezec musi byt dlouhy 1-9 znaku!\n");
+        log_debug("superblock_set_volume_descriptor: Vstupni retezec musi byt dlouhy 1-9 znaku!\n");
         return FALSE;
     }
 
@@ -95,14 +95,14 @@ bool superblock_set_signature(struct superblock *ptr, char signature[9]){
 bool superblock_set_volume_descriptor(struct superblock *ptr, char *volume_descriptor) {
     // Ověření existence struktury
     if(ptr == NULL){
-        debug_print("superblock_set_volume_descriptor: Ukazatel na strukturu nemuze byt NULL!\n");
+        log_debug("superblock_set_volume_descriptor: Ukazatel na strukturu nemuze byt NULL!\n");
         return FALSE;
     }
 
     // Ověření délky řetězce
     if(strlen(volume_descriptor) < 1 || strlen(volume_descriptor) > 251)
     {
-        debug_print("superblock_set_volume_descriptor: Vstupni retezec musi byt dlouhy 1-251 znaku!!\n");
+        log_debug("superblock_set_volume_descriptor: Vstupni retezec musi byt dlouhy 1-251 znaku!!\n");
         return FALSE;
     }
 
@@ -121,42 +121,42 @@ bool superblock_set_volume_descriptor(struct superblock *ptr, char *volume_descr
  */
 bool superblock_check(struct superblock *ptr){
     if(ptr == NULL){
-        debug_print("superblock_check: Superblock neni validni -> ukazatel je NULL!\n");
+        log_debug("superblock_check: Superblock neni validni -> ukazatel je NULL!\n");
         return FALSE;
     }
 
     // Kontrola velikosti disku
     if(ptr->disk_size < 1){
-        debug_print("superblock_check: Superblock neni validni -> disk_size!\n");
+        log_debug("superblock_check: Superblock neni validni -> disk_size!\n");
         return FALSE;
     }
 
     // Kontrola velikosti clusteru
     if(is_two_power(ptr->cluster_size) == FALSE)
     {
-        debug_print("superblock_check: Superblock neni validni -> cluster_size = %d", ptr->cluster_size);
+        log_debug("superblock_check: Superblock neni validni -> cluster_size = %d", ptr->cluster_size);
         return FALSE;
     }
 
     // Kontrola adresy bitmapy
     if(ptr->bitmap_start_address < sizeof(struct superblock)){
-        debug_print("superblock_check: Superblock neni validni -> data_start_address\n");
+        log_debug("superblock_check: Superblock neni validni -> data_start_address\n");
         return FALSE;
     }
 
     // Kontrola adresy i-uzlů
     if(ptr->inode_start_address < (ptr->bitmap_start_address + (ptr->cluster_count * sizeof(int8_t)))){
-        debug_print("superblock_check: Superblock neni validni -> inode_start_address\n");
+        log_debug("superblock_check: Superblock neni validni -> inode_start_address\n");
         return FALSE;
     }
 
     // Kontrola adresy data bloků
     if(ptr->data_start_address < 1 || ptr->data_start_address < ptr->inode_start_address){
-        debug_print("superblock_check: Superblock neni validni -> data_start_address\n");
+        log_debug("superblock_check: Superblock neni validni -> data_start_address\n");
         return FALSE;
     }
 
-    debug_print("superblock_check: Superblock je validni!\n");
+    log_debug("superblock_check: Superblock je validni!\n");
     return TRUE;
 }
 

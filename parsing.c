@@ -33,13 +33,13 @@ bool is_two_power(int32_t number){
 bool file_exist(char *path){
     // Kontrola ukazatele
     if(path == NULL){
-        debug_print("file_exist: Soubor neexistuje -> ukazatel je NULL");
+        log_debug("file_exist: Soubor neexistuje -> ukazatel je NULL");
         return FALSE;
     }
 
     // Kontrola délky cesty
     if(strlen(path) < 1){
-        debug_print("file_exist: Soubor neexistuje -> ukazatel je NULL");
+        log_debug("file_exist: Soubor neexistuje -> ukazatel je NULL");
         return FALSE;
     }
 

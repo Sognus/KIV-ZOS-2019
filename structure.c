@@ -23,28 +23,28 @@ bool structure_calculate(struct superblock *superblock_ptr) {
 
     // Kontrola ukazatele na strukturu
     if(superblock_ptr == NULL){
-        debug_print("structure_calculate: Ukazatel na strukturu nesmi byt NULL!\n");
+        log_debug("structure_calculate: Ukazatel na strukturu nesmi byt NULL!\n");
         return FALSE;
     }
 
     // Kontrola nenulové velikosti cílového VFS
     if(superblock_ptr->disk_size < 1){
-        debug_print("structure_calculate: Nelze vytvorit VFS nulove velikosti!\n");
+        log_debug("structure_calculate: Nelze vytvorit VFS nulove velikosti!\n");
         return FALSE;
     }
 
-    debug_print("structure_calculate: Velikost celeho VFS -> %d\n", superblock_ptr->disk_size);
+    log_debug("structure_calculate: Velikost celeho VFS -> %d\n", superblock_ptr->disk_size);
 
     // Pokud máme nastavenou velikost clusteru a daná hodnota je validní, použijeme ji
     int32_t vfs_cluster_size = IMPL_CLUSTER_SIZE;
     if(superblock_ptr->cluster_size > 1 && is_two_power(superblock_ptr->cluster_size)) {
         vfs_cluster_size = superblock_ptr->cluster_size;
     }
-    debug_print("structure_calculate: Velikost clusteru -> %d\n", vfs_cluster_size);
+    log_debug("structure_calculate: Velikost clusteru -> %d\n", vfs_cluster_size);
 
     // Kontrola zda velikost clusteru je mocninou čísla 2
     if(is_two_power(vfs_cluster_size) == FALSE){
-        debug_print("structure_calculate: Velikost clusteru musi byt mocninou cisla 2!!\n");
+        log_debug("structure_calculate: Velikost clusteru musi byt mocninou cisla 2!!\n");
         return FALSE;
     }
 
@@ -54,12 +54,12 @@ bool structure_calculate(struct superblock *superblock_ptr) {
     int32_t vfs_data_size = vfs_size - vfs_head_size;
 
     // DEBUG výpisy
-    debug_print("structure_calculate: Velikost hlavicky -> %d\n", vfs_head_size);
-    debug_print("structure_calculate: Velikost datove casti -> %d\n", vfs_data_size);
+    log_debug("structure_calculate: Velikost hlavicky -> %d\n", vfs_head_size);
+    log_debug("structure_calculate: Velikost datove casti -> %d\n", vfs_data_size);
 
     // Výpočet velikosti clusterů
     int32_t vfs_cluster_count = (int32_t)(floor((double)(vfs_data_size)/(double)(vfs_cluster_size)));
-    debug_print("structure_calculate: Pocet clusteru -> %d\n", vfs_cluster_count);
+    log_debug("structure_calculate: Pocet clusteru -> %d\n", vfs_cluster_count);
 
     // Výpočet adres
     int32_t vfs_bitmap_address = sizeof(struct superblock) + 1;
@@ -68,11 +68,11 @@ bool structure_calculate(struct superblock *superblock_ptr) {
     int32_t vfs_inode_count = (int32_t)(floor((double)(vfs_head_available/(double)(sizeof(struct inode)))));
     int32_t vfs_data_start = vfs_inode_address + vfs_head_available + 1;
 
-    debug_print("structure_calculate: Adresa bitmapy -> %d\n", vfs_bitmap_address);
-    debug_print("structure_calculate: Adresa inode -> %d\n", vfs_inode_address);
-    debug_print("structure_calculate: Adresa pocatku dat ->  %d\n", vfs_data_start);
-    debug_print("structure_calculate: Volne misto pro inode -> %d (byte)\n", vfs_head_available);
-    debug_print("structure_calculate: Pocet inode -> %d\n", vfs_inode_count);
+    log_debug("structure_calculate: Adresa bitmapy -> %d\n", vfs_bitmap_address);
+    log_debug("structure_calculate: Adresa inode -> %d\n", vfs_inode_address);
+    log_debug("structure_calculate: Adresa pocatku dat ->  %d\n", vfs_data_start);
+    log_debug("structure_calculate: Volne misto pro inode -> %d (byte)\n", vfs_head_available);
+    log_debug("structure_calculate: Pocet inode -> %d\n", vfs_inode_count);
 
     // Zápis vypočtených hodnot do struktury
     superblock_ptr->cluster_size = vfs_cluster_size;
@@ -114,13 +114,13 @@ void file_set_size(FILE *vfs_file, int32_t size){
 bool vfs_create(char *vfs_filename, struct superblock *superblock_ptr) {
     // Kontrola ukazatele superbloku
     if(superblock_ptr == NULL) {
-        debug_print("vfs_create: Ukazatel na superblock nesmi byt NULL!\n");
+        log_debug("vfs_create: Ukazatel na superblock nesmi byt NULL!\n");
         return FALSE;
     }
 
     // Kontrola jména souboru
     if(strlen(vfs_filename) < 1){
-        debug_print("vfs_create: Jmeno souboru nesmi byt prazdne!\n");
+        log_debug("vfs_create: Jmeno souboru nesmi byt prazdne!\n");
         return FALSE;
     }
 
@@ -140,7 +140,7 @@ bool vfs_create(char *vfs_filename, struct superblock *superblock_ptr) {
 
     // Ověření otevření souboru
     if (vfs_file == NULL) {
-        debug_print("vfs_create: Nelze otevrit soubor pro zapis!\n");
+        log_debug("vfs_create: Nelze otevrit soubor pro zapis!\n");
         return FALSE;
     }
 
