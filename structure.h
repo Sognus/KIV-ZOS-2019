@@ -27,6 +27,15 @@
 
 
 /**
+ * Vyplní soubor znaky \0 do cílové velikosti
+ *
+ * @param vfs_file ukazatel na otevřený soubor
+ * @param size cílová velikost systému
+ */
+void file_set_size(FILE *vfs_file, int32_t size);
+
+
+/**
  * Na základě celkové velikosti FS vypočítá zbylé parametry VFS
  *
  *

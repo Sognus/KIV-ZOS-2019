@@ -18,5 +18,4 @@ void debug_print(char *format, ...){
         // Ukončení argumentů
         va_end(args);
     }
-
 }

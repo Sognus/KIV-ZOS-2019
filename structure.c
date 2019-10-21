@@ -1,5 +1,7 @@
 #include "structure.h"
 #include <string.h>
+#include <unistd.h>
+
 
 /**
  * Na základě celkové velikosti FS vypočítá zbylé parametry VFS
@@ -74,6 +76,27 @@ bool structure_calculate(struct superblock *superblock_ptr) {
 }
 
 /**
+ * Vyplní soubor znaky \0 do cílové velikosti
+ *
+ * @param vfs_file ukazatel na otevřený soubor
+ * @param size cílová velikost systému
+ */
+void file_set_size(FILE *vfs_file, int32_t size){
+    #ifdef _WIN32
+        // Zápis prázdných dat do zbytku souboru
+        int32_t used = sizeof(struct superblock);
+        while(used < superblock_ptr->disk_size){
+            fputc(0, vfs_file);
+            used++;
+        }
+    #else
+        int fd = fileno(vfs_file);
+        ftruncate(fd, size);
+    #endif
+}
+
+
+/**
  * Vytvoří soubor s daným názvem, který bude fyzickou reprezentací VFS
  *
  * @param vfs_filename název VFS souboru
@@ -116,14 +139,8 @@ bool vfs_create(char *vfs_filename, struct superblock *superblock_ptr) {
     // Zápis superbloku do souboru
     fseek(vfs_file, 0, SEEK_SET);
     fwrite(superblock_ptr, sizeof(struct superblock), 1, vfs_file);
-
-    // Zápis prázdných dat do zbytku souboru
-    int32_t used = sizeof(struct superblock);
-    while(used < superblock_ptr->disk_size){
-        fputc(0, vfs_file);
-        used++;
-    }
-
+    // Nastavení velikosti souboru pro WIN a LINUX
+    file_set_size(vfs_file, superblock_ptr->disk_size);
     // Uzavření souboru po zápisu
     fclose(vfs_file);
 
@@ -131,3 +148,4 @@ bool vfs_create(char *vfs_filename, struct superblock *superblock_ptr) {
 
 
 }
+
