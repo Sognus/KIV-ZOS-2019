@@ -88,4 +88,13 @@ bool superblock_check(struct superblock *ptr);
  */
 void superblock_print(struct superblock *ptr);
 
+/**
+ * Přečte vfs a pokusí se z něj získat data superbloku
+ *
+ * @param filename soubor vfs
+ * @return (ukazatel na strukturu | NULL)
+ */
+struct superblock* superblock_from_file(char *filename);
+
+
 #endif //KIV_ZOS_SUPER_H

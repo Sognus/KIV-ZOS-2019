@@ -183,3 +183,33 @@ void superblock_print(struct superblock *ptr) {
     log_info("*** SUPERBLOCK END\n");
 }
 
+/**
+ * Přečte vfs a pokusí se z něj získat data superbloku
+ *
+ * @param filename soubor vfs
+ * @return (ukazatel na strukturu | NULL)
+ */
+struct superblock* superblock_from_file(char *filename){
+    if(file_exist(filename) != TRUE || strlen(filename) < 1){
+        log_trace("Zadany soubor %s neexistuje!\n", filename);
+        return NULL;
+    }
+
+    // Otevření souboru pro čtení
+    FILE *file = fopen(filename, "rb");
+
+    if(file == NULL){
+        log_trace("Soubor %s se nepodarilo otevrit!\n", filename);
+        return NULL;
+    }
+
+    struct superblock *ptr = malloc(sizeof(struct superblock));
+    fseek(file, 0, SEEK_SET);
+    fread(ptr, sizeof(struct superblock), 1, file);
+
+    // Uzavření souboru
+    fclose(file);
+
+    return ptr;
+}
+

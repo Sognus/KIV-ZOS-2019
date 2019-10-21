@@ -37,4 +37,65 @@ struct inode {
  */
 void inode_print(struct inode *ptr);
 
+
+/**
+ * Vrátí první volný index pro inode
+ *
+ * @param filename
+ * @return
+ */
+int32_t inode_find_free_index(char *filename);
+
+/**
+ * Na základě indexu vrátí adresu inode
+ *
+ * @param filename soubor vfs
+ * @param inode_index index inode
+ * @return
+ */
+int32_t inode_index_to_adress(char *filename, int32_t inode_index);
+
+/**
+ * Zapíše obsah struktury inode na adresu ve VFS určenou indexem
+ *
+ * @param filename soubor vfs
+ * @param inode_index index inode ve VFS
+ * @param inode_ptr struktura k zapsání
+ * @return výsledek operace
+ */
+int32_t inode_write_to_index(char *filename, int32_t inode_index, struct inode *inode_ptr);
+
+/**
+ * Zapíše obsah struktury inode na adresu ve VFS
+ *
+ * @param filename soubor vfs
+ * @param inode_address adresa inode ve VFS
+ * @param inode_ptr struktura k zapsání
+ * @return výsledek operace
+ */
+int32_t inode_write_to_address(char *filename, int32_t inode_address, struct inode *inode_ptr);
+
+/**
+ * Pokusí se o přečtení struktury inode z VFS a vrátí ukazatel
+ * hledá inode dle indexu
+ *
+ * @param filename soubor VFS
+ * @param inode_index index inode
+ * @return výsledek operace (PTR | NULL)
+ */
+struct inode *inode_read_by_index(char *filename, int32_t inode_index);
+
+
+/**
+ * Pokusí se o přečtení struktury inode z VFS a vrátí ukazatel
+ * hledá inode dle indexu
+ *
+ * @param filename soubor VFS
+ * @param inode_address adresa inode ve VFS
+ * @return výsledek operace (PTR | NULL)
+ */
+struct inode *inode_read_by_address(char *filename, int32_t inode_address);
+
+
+
 #endif //KIV_ZOS_INODE_H
