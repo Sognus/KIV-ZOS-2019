@@ -96,7 +96,6 @@ int32_t inode_write_to_address(char *filename, int32_t inode_address, struct ino
 
     // Nastavení ukazatele zápisu
     printf("Address %d\n", inode_address);
-    // TODO: FIX
     fseek(file, inode_address, SEEK_SET);
     fflush(file);
     fwrite(inode_ptr, sizeof(struct inode), 1, file);
