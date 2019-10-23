@@ -83,6 +83,6 @@ void log_error(char *format, ...);
  * @param format formát textu
  * @param ... parametry formátování
  */
-void log_fatal(char *format, ...);
+void log_fatal(char *format, ... );
 
 #endif //KIV_ZOS_DEBUG_H

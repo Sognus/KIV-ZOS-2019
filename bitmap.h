@@ -44,4 +44,21 @@ int32_t bitmap_set(char *filename, int32_t index, int32_t count, bool value);
 bool bitmap_get(char *filename, int32_t index);
 
 
+/**
+ * Na základě indexu vypočte počáteční adresu clusteru
+ *
+ * @param filename soubor VFS
+ * @param index index clusteru
+ * @return (return < 0 - chyba | return > 0 - adresa clusteru ve VFS)
+ */
+int32_t bitmap_index_to_cluster_address(char *filename, int32_t index);
+
+/**
+ * Vrátí první volný cluster v bitmapě
+ *
+ * @param filename soubor vfs
+ * @return  index volného clusteru
+ */
+int32_t bitmap_find_free_cluster_index(char *filename);
+
 #endif //KIV_ZOS_BITMAP_H

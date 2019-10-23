@@ -95,7 +95,6 @@ int32_t inode_write_to_address(char *filename, int32_t inode_address, struct ino
 
 
     // Nastavení ukazatele zápisu
-    printf("Address %d\n", inode_address);
     fseek(file, inode_address, SEEK_SET);
     fflush(file);
     fwrite(inode_ptr, sizeof(struct inode), 1, file);
@@ -272,4 +271,94 @@ struct inode *inode_read_by_address(char *filename, int32_t inode_address){
     }
 
     return inode_ptr;
+}
+
+/**
+ * TODO: Přesun do allocation
+ *
+ * Kontrolní funkce, která ověří, zda lze převést adresu na index data bloku
+ *
+ * @param filename soubor vfs
+ * @param address adresa ve VFS
+ * @return výsledek operace (return < 0 - chyba | return >= 0 - validní index)
+ */
+int32_t inode_data_index_from_address(char *filename, int32_t address){
+    // Kontrola délky názvu souboru
+    if(strlen(filename) < 1){
+        return -1;
+    }
+
+    // Ověření existence souboru
+    if(file_exist(filename) != TRUE){
+        return -2;
+    }
+
+    // Získání superbloku ze souboru
+    struct superblock *superblock_ptr = superblock_from_file(filename);
+
+    // Ověření ziskání superbloku
+    if(superblock_ptr == NULL){
+        return -3;
+    }
+
+    int32_t current_address = superblock_ptr->data_start_address;
+    int32_t cluster_size = superblock_ptr->cluster_size;
+    int32_t index = 0;
+
+    while(current_address < superblock_ptr->disk_size){
+        if(current_address == address){
+            break;
+        }
+
+        current_address = current_address + cluster_size;
+        index++;
+    }
+
+    if(index > superblock_ptr->cluster_count){
+        return -4;
+    }
+
+    return index;
+}
+
+/**
+ * Přidá nový ukazatel na datový blok pro strukturu
+ *
+ * @param filename soubor VFS
+ * @param inode_ptr ukazatel na pozměňovaný inode
+ * @return výsledek operace
+ */
+bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t address){
+    // Kontrola délky názvu souboru
+    if(strlen(filename) < 1){
+        return -1;
+    }
+
+    // Ověření existence souboru
+    if(file_exist(filename) != TRUE){
+        return -2;
+    }
+
+    // Získání superbloku ze souboru
+    struct superblock *superblock_ptr = superblock_from_file(filename);
+
+    // Ověření ziskání superbloku
+    if(superblock_ptr == NULL){
+        return -3;
+    }
+
+    // Kontrola zda adresa je validní adresou začátku clusteru
+    if(inode_data_index_from_address(filename, address) < 0){
+        return -4;
+    }
+
+    /*
+     * TODO:
+     *      Postupné procházení datových ukazatelů - hledání nulových adres,
+     *      nejprve direct1 až direct5
+     *      potom indirect1 - kde procházet lineárně po 4B
+     *      nakonec indirect1 - kde nejprve skočit na 4096B level 1 a u každého level1 skočit na další adresu
+     */
+
+    return TRUE;
 }

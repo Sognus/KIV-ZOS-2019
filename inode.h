@@ -96,6 +96,22 @@ struct inode *inode_read_by_index(char *filename, int32_t inode_index);
  */
 struct inode *inode_read_by_address(char *filename, int32_t inode_address);
 
+/**
+ * Kontrolní funkce, která ověří, zda lze převést adresu na index data bloku
+ *
+ * @param filename soubor vfs
+ * @param address adresa ve VFS
+ * @return výsledek operace (return < 0 - chyba | return >= 0 - validní index)
+ */
+int32_t inode_data_index_from_address(char *filename, int32_t address);
 
+/**
+ * Přidá nový ukazatel na datový blok pro strukturu
+ *
+ * @param filename soubor VFS
+ * @param inode_ptr ukazatel na pozměňovaný inode
+ * @return výsledek operace
+ */
+bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t address);
 
 #endif //KIV_ZOS_INODE_H

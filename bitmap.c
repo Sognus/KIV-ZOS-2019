@@ -192,3 +192,90 @@ bool bitmap_get(char *filename, int32_t index) {
 
     return value;
 }
+
+/**
+ * Na základě indexu vypočte počáteční adresu clusteru
+ *
+ * @param filename soubor VFS
+ * @param index index clusteru
+ * @return (return < 0 - chyba | return > 0 - adresa clusteru ve VFS)
+ */
+int32_t bitmap_index_to_cluster_address(char *filename, int32_t index){
+    // Kontrola délky názvu souboru
+    if(strlen(filename) < 1){
+        log_debug("bitmap_index_to_cluster_address: Nelze pouzit prazdne jmeno souboru!\n");
+        return -1;
+    }
+
+    // Ověření existence souboru
+    if(file_exist(filename) != TRUE){
+        log_debug("bitmap_index_to_cluster_address: Zadany soubor neexistuje!\n");
+        return -2;
+    }
+
+    // Získání superbloku ze souboru
+    struct superblock *superblock_ptr = superblock_from_file(filename);
+
+    // Ověření ziskání superbloku
+    if(superblock_ptr == NULL){
+        log_debug("bitmap_index_to_cluster_address: Nepodarilo se precist superblok!\n");
+        return -3;
+    }
+
+    // Ověření validity čtení
+    if(index < 0 || index > superblock_ptr->cluster_count){
+        log_debug("bitmap_index_to_cluster_address: Index je mimo povoleny rozsah!\n");
+        return -4;
+    }
+
+    int32_t address = superblock_ptr->data_start_address + (index * superblock_ptr->cluster_size);
+    free(superblock_ptr);
+    return address;
+
+}
+
+/**
+ * Vrátí první volný cluster v bitmapě
+ *
+ * @param filename soubor vfs
+ * @return  index volného clusteru
+ */
+int32_t bitmap_find_free_cluster_index(char *filename){
+    // Kontrola délky názvu souboru
+    if(strlen(filename) < 1){
+        log_debug("bitmap_find_free_cluster_index: Nelze pouzit prazdne jmeno souboru!\n");
+        return -1;
+    }
+
+    // Ověření existence souboru
+    if(file_exist(filename) != TRUE){
+        log_debug("bitmap_find_free_cluster_index: Zadany soubor neexistuje!\n");
+        return -2;
+    }
+
+    // Získání superbloku ze souboru
+    struct superblock *superblock_ptr = superblock_from_file(filename);
+
+    // Ověření ziskání superbloku
+    if(superblock_ptr == NULL){
+        log_debug("bitmap_find_free_cluster_index: Nepodarilo se precist superblok!\n");
+        return -3;
+    }
+
+    int32_t current_index = 0;
+    int32_t cluster_count = superblock_ptr->cluster_count;
+    free(superblock_ptr);
+
+    // Lineární prohledávání bitmapy
+    while(current_index < superblock_ptr->cluster_count){
+        // Cluster je prázdný
+        if(bitmap_get(filename, current_index) == FALSE){
+            return current_index;
+        }
+        current_index++;
+    }
+
+    // Neexistuje volný cluster
+    return -4;
+
+}
