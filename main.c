@@ -17,10 +17,10 @@
 
 int main() {
 
-    //const int32_t disk_size = 629145600;                                // 600MB
+    const int32_t disk_size = 629145600;                                // 600MB
     //const int32_t disk_size = 52428800;                                 // 50MB
     //const int32_t disk_size = 10485760;                                 // 10MB
-    const int32_t  disk_size = 65536;                                     // 64KB
+    //const int32_t  disk_size = 65536;                                     // 64KB
 
     /*
      * [TEST VYTVOŘENÍ SOUBORU]
@@ -36,6 +36,7 @@ int main() {
      * [TEST BITMAPY]
      */
 
+    /*
     // Základ
     printf("\n\n\n");
     bitmap_print(FILENAME);
@@ -53,10 +54,12 @@ int main() {
     bitmap_set(FILENAME, 0, 30, TRUE);
     printf("Volný cluster index (EXPECTED -4): %d\n", bitmap_find_free_cluster_index(FILENAME));
     bitmap_set(FILENAME, 0, 30, FALSE);
+    */
 
     /*
      * [INODE]
      */
+    /*
     // Zapisování
     struct inode *inode_ptr_write = malloc(sizeof(struct inode));
     int32_t inode_free = inode_find_free_index(FILENAME);
@@ -82,6 +85,7 @@ int main() {
     inode_free = inode_find_free_index(FILENAME);
     printf("Free inode index (expected 33): %d\n", inode_free);
 
+
     // Kontrola zapisované adresy
     struct superblock *sb = malloc(sizeof(struct superblock));
     sb = superblock_from_file(FILENAME);
@@ -95,6 +99,32 @@ int main() {
 
         check_addr++;
     }
+    */
+
+    /*
+     * [PRÁCE S INODE - ZÁPIS]
+     */
+    struct inode *iinode = malloc(sizeof(struct inode));
+    memset(iinode, 0, sizeof(struct inode));
+    int32_t iinode_free_index = inode_find_free_index(FILENAME);
+    iinode->id = iinode_free_index + 1;
+    inode_write_to_index(FILENAME, iinode_free_index, iinode);
+
+    while(1){
+        int32_t iicluster = bitmap_find_free_cluster_index(FILENAME);
+        int32_t iiaddr = bitmap_index_to_cluster_address(FILENAME, iicluster);
+
+        int32_t iiaddr_add_result = inode_add_data_address(FILENAME, iinode, iiaddr);
+
+        if(iiaddr_add_result > 0){
+            printf("Cluster address=%d written to inode pointer index=%d\n", iiaddr, iicluster);
+        }
+        else{
+            printf("Test ended with code %d\n", iiaddr_add_result);
+            break;
+        }
+    }
+
 
 
     /*

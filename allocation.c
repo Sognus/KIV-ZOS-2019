@@ -59,6 +59,7 @@ int32_t allocate_bytes(char *filename, int64_t bytes, struct inode *inode_ptr){
 
 /**
  * TODO: implement
+ * TODO: implement
  *
  * Přidělí danému i-uzlu data bloky ve VFS, počet přidělených bloků je přímo předán
  * hodnotou funkce

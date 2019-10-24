@@ -4,7 +4,8 @@
 #include "debug.h"
 #include "superblock.h"
 #include "parsing.h"
-
+#include "bitmap.h"
+#include "allocation.h"
 
 /**
  * Vypíše obsah struktury inode
@@ -352,13 +353,61 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
         return -4;
     }
 
+    // TODO: Kontrola jestli už je adresa/index použitá (možná)
+
+    bool address_writen = FALSE;
+    int32_t index_written = -50;
+
     /*
-     * TODO:
-     *      Postupné procházení datových ukazatelů - hledání nulových adres,
-     *      nejprve direct1 až direct5
-     *      potom indirect1 - kde procházet lineárně po 4B
-     *      nakonec indirect1 - kde nejprve skočit na 4096B level 1 a u každého level1 skočit na další adresu
+     * Kontrola možnosti zapsání přímých adres
      */
 
-    return TRUE;
+    if(inode_ptr->direct1 == 0 && address_writen == FALSE){
+        inode_ptr->direct1 = address;
+        index_written = 1;
+        address_writen = TRUE;
+    }
+
+    if(inode_ptr->direct2 == 0 && address_writen == FALSE){
+        inode_ptr->direct2 = address;
+        index_written = 2;
+        address_writen = TRUE;
+    }
+
+    if(inode_ptr->direct3 == 0 && address_writen == FALSE){
+        inode_ptr->direct3 = address;
+        index_written = 3;
+        address_writen = TRUE;
+    }
+
+    if(inode_ptr->direct4 == 0 && address_writen == FALSE){
+        inode_ptr->direct4 = address;
+        index_written = 4;
+        address_writen = TRUE;
+    }
+
+    if(inode_ptr->direct5 == 0 && address_writen == FALSE){
+        inode_ptr->direct5 = address;
+        index_written = 5;
+        address_writen = TRUE;
+    }
+
+    // TODO: nepřímý odkaz 1
+    // TODO: nepřímý odkaz 2
+
+
+    // Zabrání data bloku v bitmapě
+    if(address_writen == TRUE){
+        int32_t data_index_claimed = inode_data_index_from_address(filename, address);
+        bitmap_set(filename, data_index_claimed, 1, TRUE);
+    }
+    else{
+        return -6;
+    }
+
+    // Návrat indexu odkazu v INODE na data blok
+    // 1-5 = direct
+    // 6-1030 = indirect1
+    // zbytek = indirect2
+    return address_writen;
 }
