@@ -117,7 +117,7 @@ int main() {
         int32_t iiaddr_add_result = inode_add_data_address(FILENAME, iinode, iiaddr);
 
         if(iiaddr_add_result > 0){
-            printf("Cluster address=%d written to inode pointer index=%d\n", iiaddr, iicluster);
+            // OK
         }
         else{
             printf("Test ended with code %d\n", iiaddr_add_result);

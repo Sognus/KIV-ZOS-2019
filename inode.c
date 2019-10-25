@@ -366,33 +366,98 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
         inode_ptr->direct1 = address;
         index_written = 1;
         address_writen = TRUE;
+        log_trace("inode_add_data_address: Adresa databloku ulozena do direct1 (index 1)\n");
     }
 
     if(inode_ptr->direct2 == 0 && address_writen == FALSE){
         inode_ptr->direct2 = address;
         index_written = 2;
         address_writen = TRUE;
+        log_trace("inode_add_data_address: Adresa databloku ulozena do direct2 (index 2)\n");
     }
 
     if(inode_ptr->direct3 == 0 && address_writen == FALSE){
         inode_ptr->direct3 = address;
         index_written = 3;
         address_writen = TRUE;
+        log_trace("inode_add_data_address: Adresa databloku ulozena do direct3 (index 3)\n");
     }
 
     if(inode_ptr->direct4 == 0 && address_writen == FALSE){
         inode_ptr->direct4 = address;
         index_written = 4;
         address_writen = TRUE;
+        log_trace("inode_add_data_address: Adresa databloku ulozena do direct4 (index 4)\n");
     }
 
     if(inode_ptr->direct5 == 0 && address_writen == FALSE){
         inode_ptr->direct5 = address;
         index_written = 5;
         address_writen = TRUE;
+        log_trace("inode_add_data_address: Adresa databloku ulozena do direct5 (index 5)\n");
     }
 
-    // TODO: nepřímý odkaz 1
+    /*
+     * 1. nepřímý odkaz na clustery
+     */
+
+    // Alokace pro nepřímý odkaz v případě, že je potřeba
+    if(inode_ptr->indirect1 == 0 && address_writen == FALSE){
+        int32_t indirect1_allocation_index = bitmap_find_free_cluster_index(filename);
+
+        if(indirect1_allocation_index < 0){
+            log_debug("inode_add_data_address: Nelze alokovat 1. neprimou adresu, nedostatek volnych clusteru!\n");
+            return -5;
+        }
+
+        int32_t indirect1_allocation_address = bitmap_index_to_cluster_address(filename, indirect1_allocation_index);
+        bitmap_set(filename, indirect1_allocation_index, 1, TRUE);
+
+        // Nulování datového bloku
+        allocation_clear_cluster(filename, indirect1_allocation_address);
+        // Zápis do inode
+        inode_ptr->indirect1 = indirect1_allocation_address;
+        // Zápis na VFS
+        inode_write_to_index(filename, inode_ptr->id - 1, inode_ptr);
+        log_trace("inode_add_data_address: Hodnota nepřímého odkazu pro ID=%d nastavena na %d\n", inode_ptr->id, inode_ptr->indirect1);
+    }
+
+    if(address_writen == FALSE) {
+        index_written = 6;
+
+        // Procházení 1. nepřímého odkazu a zápis
+        int32_t *indirect1_iter_data = malloc(sizeof(int32_t));
+        int32_t indirect1_iter_current = inode_ptr->indirect1;
+        int32_t indirect1_iter_end = inode_ptr->indirect1 + superblock_ptr->cluster_size;
+
+        FILE *file_read = fopen(filename, "r+b");
+
+        while (indirect1_iter_current < indirect1_iter_end) {
+
+            fseek(file_read, indirect1_iter_current, SEEK_SET);
+            memset(indirect1_iter_data, 0, sizeof(int32_t));
+            fread(indirect1_iter_data, sizeof(int32_t), 1, file_read);
+
+            // Našli jsme místo kam zapsat
+            if (*indirect1_iter_data == 0) {
+                fseek(file_read, indirect1_iter_current, SEEK_SET);
+                fwrite(&address, sizeof(int32_t), 1, file_read);
+                fflush(file_read);
+
+                address_writen = TRUE;
+                log_trace("inode_add_data_address: Adresa databloku ulozena do indirect1 (index %d)\n", index_written);
+                break;
+            }
+
+            // Posun na další adresu
+            indirect1_iter_current += sizeof(int32_t);
+            index_written++;
+        }
+
+        fclose(file_read);
+        free(indirect1_iter_data);
+    }
+
     // TODO: nepřímý odkaz 2
 
 

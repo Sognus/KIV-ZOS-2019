@@ -108,3 +108,64 @@ int32_t allocate_data_blocks(char *filename, int32_t allocation_size, struct ino
     // TODO: přepis změn inode do VFS
     return 0;
 }
+
+/**
+ * Nastaví data v clusteru, začínající adresou address na 0
+ *
+ * @param filename soubor vfs
+ * @param address pořátek clusteru
+ * @return výsledek operace (return < 0 chyba | 1 = OK)
+ */
+bool allocation_clear_cluster(char *filename, int32_t address){
+    // Kontrola délky názvu souboru
+    if(strlen(filename) < 1){
+        log_debug("allocation_clear_cluster: Nelze pouzit prazdne jmeno souboru!\n");
+        return -1;
+    }
+
+    // Ověření existence souboru
+    if(file_exist(filename) != TRUE){
+        log_debug("alllocation_clear_cluster: Zadany soubor neexistuje!\n");
+        return -2;
+    }
+
+    // Získání superbloku ze souboru
+    struct superblock *superblock_ptr = superblock_from_file(filename);
+
+    // Ověření ziskání superbloku
+    if(superblock_ptr == NULL){
+        log_debug("allocation_clear_cluster: Nepodarilo se precist superblok!\n");
+        return -3;
+    }
+
+    // Kontrola adresy - rozsah
+    if(address < superblock_ptr->data_start_address || address > superblock_ptr->disk_size){
+        log_debug("allocation_clear_cluster: Adresa k vymazani dat je mimo povoleny rozsah!\n");
+        return -4;
+    }
+
+    int32_t cluster_index = inode_data_index_from_address(filename, address);
+
+    // Kontrola adresy - cluster
+    if(cluster_index < 0){
+        log_debug("allocation_clear_cluster: Adresa k vymazanim neukazuje na pocatek datoveho bloku!\n");
+        return -5;
+    }
+
+    FILE *file = fopen(filename, "r+b");
+
+    if(file == NULL){
+        log_debug("allocation_clear_cluster: Nepodarilo se otevrit soubor k prepisu\n");
+        return -6;
+    }
+
+    fseek(file, address, SEEK_SET);
+    char zero = 0;
+    fwrite(&zero, sizeof(zero), superblock_ptr->cluster_size, file);
+    fflush(file);
+    fclose(file);
+
+    log_trace("allocation_clear_cluster: Vynulovana data v clusteru %d\n", cluster_index);
+
+    return TRUE;
+}

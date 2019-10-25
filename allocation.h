@@ -37,4 +37,13 @@ int32_t allocate_bytes(char *filename, int64_t bytes, struct inode *inode_ptr);
  */
 int32_t allocate_data_blocks(char *filename, int32_t allocation_size, struct inode *inode_ptr);
 
+/**
+ * Nastaví data v clusteru, začínající adresou address na 0
+ *
+ * @param filename soubor vfs
+ * @param address pořátek clusteru
+ * @return výsledek operace (return < 0 chyba | 1 = OK)
+ */
+bool allocation_clear_cluster(char *filename, int32_t address);
+
 #endif //KIV_ZOS_ALLOCATION_H
