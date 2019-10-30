@@ -267,7 +267,7 @@ int32_t bitmap_find_free_cluster_index(char *filename){
     free(superblock_ptr);
 
     // Lineární prohledávání bitmapy
-    while(current_index < superblock_ptr->cluster_count){
+    while(current_index < cluster_count){
         // Cluster je prázdný
         if(bitmap_get(filename, current_index) == FALSE){
             return current_index;

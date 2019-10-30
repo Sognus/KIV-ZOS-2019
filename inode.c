@@ -459,6 +459,32 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
     }
 
     // TODO: nepřímý odkaz 2
+    if(address_writen == FALSE) {
+        int32_t *indirect2_iter_data = malloc(sizeof(int32_t));
+
+        // Alokace pro inode->indirect2 pokud je ukazatel NULL
+        if (inode_ptr->indirect2 == 0) {
+            int32_t indirect2_allocation_index = bitmap_find_free_cluster_index(filename);
+
+            if (indirect2_allocation_index < 0) {
+                log_debug("inode_add_data_address: Nelze alokovat 2. neprimou adresu, nedostatek volnych clusteru!\n");
+                return -6;
+            }
+
+            int32_t indirect2_allocation_address = bitmap_index_to_cluster_address(filename,
+                                                                                   indirect2_allocation_index);
+            bitmap_set(filename, indirect2_allocation_index, 1, TRUE);
+
+            // Nulování datového bloku
+            allocation_clear_cluster(filename, indirect2_allocation_address);
+            // Zápis do inode
+            inode_ptr->indirect2 = indirect2_allocation_address;
+            // Zápis na VFS
+            inode_write_to_index(filename, inode_ptr->id - 1, inode_ptr);
+            log_trace("inode_add_data_address: Hodnota 2. nepřímého odkazu pro ID=%d nastavena na %d\n", inode_ptr->id,
+                      inode_ptr->indirect2);
+        }
+    }
 
 
     // Zabrání data bloku v bitmapě
@@ -467,7 +493,7 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
         bitmap_set(filename, data_index_claimed, 1, TRUE);
     }
     else{
-        return -6;
+        return -7;
     }
 
     // Návrat indexu odkazu v INODE na data blok
