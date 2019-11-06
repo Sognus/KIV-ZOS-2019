@@ -8,13 +8,6 @@
 #include <stdarg.h>
 #include "bool.h"
 
-
-/*
- * Konstanty
- */
-#define DEBUG TRUE
-#define DEBUG_LEVEL 0
-
 // Chování při zápisu do logovacího souboru
 #define LOG_MODE_APPEND "a"
 #define LOG_MODE_REWRITE "w+"
@@ -36,6 +29,12 @@
 #define LOG_INFO 3
 #define LOG_ERROR 4
 #define LOG_FATAL 5
+
+/*
+ * Konstanty
+ */
+#define DEBUG TRUE
+#define DEBUG_LEVEL LOG_ALL
 
 // Definice formátování
 #define LOG_TIME_FORMAT "%d.%m.%Y %H:%M:%S"

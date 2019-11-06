@@ -9,9 +9,16 @@
 
 /*
  * TODO:
- *      Vyřešit alokaci větších souborů, zápis datových odkazů
- *          1) Kontrola rozšíření alokace clusterů složky pro více než CLUSTER_SIZE / (DIR_ITEM) -> 4096 / 16 -> 256 souborů
- *          2) Kontrola alokace clusterů pro soubor
+ *      Kontrola alokace clusterů pro inode (OTESTOVAT)
+ *          Opravit iteraci level 2
+ *          optimalizace iterace level 2
+ *              přečíst zda je poslední prvek v levelu 2 nastaven na nenulovou hodnotu -> nenulová hodnota = skip
+ *      Výpočet ukazatele v inode na základě indexu
+ *          1-5 -> direct [1-5]
+ *          6 - 1030 -> indirect1
+ *          1031 - 2055 -> indirect2 0
+ *          2056 - 3080 -> indirect2 1
+ *          etc
  */
 
 
@@ -109,6 +116,7 @@ int main() {
     int32_t iinode_free_index = inode_find_free_index(FILENAME);
     iinode->id = iinode_free_index + 1;
     inode_write_to_index(FILENAME, iinode_free_index, iinode);
+    int32_t last_index = -1;
 
     while(1){
         int32_t iicluster = bitmap_find_free_cluster_index(FILENAME);
@@ -117,10 +125,10 @@ int main() {
         int32_t iiaddr_add_result = inode_add_data_address(FILENAME, iinode, iiaddr);
 
         if(iiaddr_add_result > 0){
-            // OK
+            last_index = iiaddr_add_result;
         }
         else{
-            printf("Test ended with code %d\n", iiaddr_add_result);
+            printf("Test ended with code %d - last index = %d\n", iiaddr_add_result, last_index);
             break;
         }
     }

@@ -460,7 +460,6 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
 
     // TODO: nepřímý odkaz 2
     if(address_writen == FALSE) {
-        int32_t *indirect2_iter_data = malloc(sizeof(int32_t));
 
         // Alokace pro inode->indirect2 pokud je ukazatel NULL
         if (inode_ptr->indirect2 == 0) {
@@ -484,6 +483,104 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
             log_trace("inode_add_data_address: Hodnota 2. nepřímého odkazu pro ID=%d nastavena na %d\n", inode_ptr->id,
                       inode_ptr->indirect2);
         }
+
+        // Nepřímá adresa typu 2 -> nepřímá adresa typu 1
+        int32_t *indirect2_level1_iter_data = malloc(sizeof(int32_t));
+        int32_t indirect2_level1_iter_current = inode_ptr->indirect2;
+        int32_t indirect2_level1_iter_end = inode_ptr->indirect2 + superblock_ptr->cluster_size;
+
+        FILE *indirect2_file_read = fopen(filename, "r+b");
+        int level1_debug_iter = 0;
+
+        // Nepřímá adresa - iterace level 1
+        while(indirect2_level1_iter_current < indirect2_level1_iter_end && address_writen == FALSE){
+            memset(indirect2_level1_iter_data, 0, sizeof(int32_t));
+            fseek(indirect2_file_read, indirect2_level1_iter_current, SEEK_SET);
+            fread(indirect2_level1_iter_data, sizeof(int32_t), 1, indirect2_file_read);
+
+            // Pokud je ukazatel NULL, alokuj nový cluster a vrat na něj adresu
+            if(*indirect2_level1_iter_data == 0){
+                int32_t indirect2_level1_allocation_index = bitmap_find_free_cluster_index(filename);
+
+                if (indirect2_level1_allocation_index < 0) {
+                    log_debug("inode_add_data_address: Nelze alokovat 2. neprimou adresu úrovně 1, nedostatek volnych clusteru!\n");
+                    return -6;
+                }
+
+                int32_t indirect2_level1_allocation_address = bitmap_index_to_cluster_address(filename,
+                                                                                       indirect2_level1_allocation_index);
+                bitmap_set(filename, indirect2_level1_allocation_index, 1, TRUE);
+
+                // Nulování datového bloku
+                allocation_clear_cluster(filename, indirect2_level1_allocation_address);
+
+                // Zápis do inode
+                fseek(indirect2_file_read, indirect2_level1_iter_current, SEEK_SET);
+                fwrite(&indirect2_level1_allocation_address, sizeof(indirect2_level1_allocation_address), 1, indirect2_file_read);
+                fflush(indirect2_file_read);
+
+                // Zápis na VFS
+                inode_write_to_index(filename, inode_ptr->id - 1, inode_ptr);
+                log_trace("inode_add_data_address: Hodnota 2. nepřímého odkazu level 1, iterace %d pro inode ID=%d nastavena na %d\n", level1_debug_iter,inode_ptr->id,
+                          indirect2_level1_allocation_address);
+            }
+
+            // Nepřímá adresa - iterace level 2
+            int32_t *indirect2_level2_iter_data = malloc(sizeof(int32_t));
+            int32_t indirect2_level2_iter_current = *indirect2_level1_iter_data;
+            int32_t indirect2_level2_iter_end = indirect2_level2_iter_current + superblock_ptr->cluster_size;
+
+            int32_t level2_debug_iter = 0;
+
+            while(indirect2_level2_iter_current < indirect2_level2_iter_end && address_writen == FALSE){
+                // Prečtení adresy levelu 2
+                memset(indirect2_level2_iter_data, 0, sizeof(int32_t));
+                fseek(indirect2_file_read, indirect2_level2_iter_current, SEEK_SET);
+                fread(indirect2_level2_iter_data, sizeof(int32_t), 1, indirect2_file_read);
+
+                // Pokud je adresa NULL - alokuj a zapiš
+                if(*indirect2_level2_iter_data == 0){
+                    int32_t indirect2_level2_allocation_index = bitmap_find_free_cluster_index(filename);
+
+                    if (indirect2_level2_allocation_index < 0) {
+                        log_debug("inode_add_data_address: Nelze alokovat 2. neprimou adresu úrovně 1, nedostatek volnych clusteru!\n");
+                        return -6;
+                    }
+
+                    int32_t indirect2_level2_allocation_address = bitmap_index_to_cluster_address(filename,
+                                                                                                  indirect2_level2_allocation_index);
+                    bitmap_set(filename, indirect2_level2_allocation_index, 1, TRUE);
+
+                    // Nulování datového bloku
+                    allocation_clear_cluster(filename, indirect2_level2_allocation_address);
+
+                    // Zápis do inode
+                    fseek(indirect2_file_read, indirect2_level2_iter_current, SEEK_SET);
+                    fwrite(&indirect2_level2_allocation_address, sizeof(indirect2_level2_allocation_address), 1, indirect2_file_read);
+                    fflush(indirect2_file_read);
+
+                    // Zápis na VFS
+                    inode_write_to_index(filename, inode_ptr->id - 1, inode_ptr);
+                    log_trace("inode_add_data_address: Hodnota 2. nepřímého odkazu level 2, iterace %d pro inode ID=%d nastavena na %d\n", level2_debug_iter,inode_ptr->id,
+                              indirect2_level2_allocation_address);
+
+                    // Označení zápisu
+                    address_writen = TRUE;
+                    log_trace("inode_add_data_address: Adresa databloku ulozena do indirect2 [level1=%d, level2=%d] (index %d)\n", level1_debug_iter, level2_debug_iter,index_written);
+                }
+
+                // Posun na další adresu v levelu 2
+                indirect2_level2_iter_current += sizeof(int32_t);
+                level2_debug_iter++;
+                index_written++;
+            }
+
+
+            // Posun na další položku levelu 2
+            indirect2_level1_iter_current += sizeof(int32_t);
+            level1_debug_iter++;
+        }
+
     }
 
 
@@ -499,6 +596,11 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
     // Návrat indexu odkazu v INODE na data blok
     // 1-5 = direct
     // 6-1030 = indirect1
-    // zbytek = indirect2
+    // zbytek = indirect2 - 1024 per level
+    /*
+     * INDIRECT2
+     *      I2L1 - 1024
+     *      I2L2 - 1024
+     */
     return address_writen;
 }
