@@ -18,7 +18,8 @@ const char IMPL_VOLUME_DESCRIPTOR[251] = "Semestralni prace KIV/ZOS v akademicke
  * @return ukazatel na superblock
  */
 struct superblock* superblock_impl_alloc(int32_t disk_size){
-    struct superblock *ptr = malloc(sizeof(struct superblock));
+    struct superblock *ptr = NULL;
+    ptr = malloc(sizeof(struct superblock));
 
     if(ptr == NULL){
         log_debug("superblock_impl_alloc: Nepodarilo se alokovat pamet!\n");
@@ -26,6 +27,7 @@ struct superblock* superblock_impl_alloc(int32_t disk_size){
     }
 
     ptr->disk_size = disk_size;
+    ptr->cluster_size = -1;
     superblock_set_signature(ptr, (char*)IMPL_SIGNATURE);
     superblock_set_volume_descriptor(ptr, (char*)IMPL_VOLUME_DESCRIPTOR);
 

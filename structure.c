@@ -37,7 +37,7 @@ bool structure_calculate(struct superblock *superblock_ptr) {
 
     // Pokud máme nastavenou velikost clusteru a daná hodnota je validní, použijeme ji
     int32_t vfs_cluster_size = IMPL_CLUSTER_SIZE;
-    if(superblock_ptr->cluster_size > 1 && is_two_power(superblock_ptr->cluster_size)) {
+    if(superblock_ptr->cluster_size > 0 && is_two_power(superblock_ptr->cluster_size)) {
         vfs_cluster_size = superblock_ptr->cluster_size;
     }
     log_debug("structure_calculate: Velikost clusteru -> %d\n", vfs_cluster_size);

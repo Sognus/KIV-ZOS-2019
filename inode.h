@@ -17,17 +17,18 @@
  * Struktury
  */
 struct inode {
-    int32_t id;                // ID i-uzlu; pokud ID == ID_ITEM_FREE, je položka volná
-    int8_t type;               // Typ i-uzlu; 0 = soubor; 1 = složka; 2 = symlink
-    int8_t references;         // Počet odkazů na i-uzel; používá se pro hardlinky
-    int32_t file_size;         // Velikost souboru v bytech
-    int32_t direct1;           // 1. přímý odkaz na datové bloky
-    int32_t direct2;           // 2. přímý odkaz na datové bloky
-    int32_t direct3;           // 3. přímý odkaz na datové bloky
-    int32_t direct4;           // 4. přímý odkaz na datové bloky
-    int32_t direct5;           // 5. přímý odkaz na datové bloky
-    int32_t indirect1;         // 1. nepřímý odkaz (odkaz - datové bloky)
-    int32_t indirect2;         // 2. nepřímý odkaz (odkaz - odkaz - datové bloky)
+    int32_t id;                 // ID i-uzlu; pokud ID == ID_ITEM_FREE, je položka volná
+    int8_t type;                // Typ i-uzlu; 0 = soubor; 1 = složka; 2 = symlink
+    int8_t references;          // Počet odkazů na i-uzel; používá se pro hardlinky
+    int32_t allocated_clusters; // Počet alokovavaných clusterů (počet odkazů na datové bloky)
+    int32_t file_size;          // Velikost souboru v bytech
+    int32_t direct1;            // 1. přímý odkaz na datové bloky
+    int32_t direct2;            // 2. přímý odkaz na datové bloky
+    int32_t direct3;            // 3. přímý odkaz na datové bloky
+    int32_t direct4;            // 4. přímý odkaz na datové bloky
+    int32_t direct5;            // 5. přímý odkaz na datové bloky
+    int32_t indirect1;          // 1. nepřímý odkaz (odkaz - datové bloky)
+    int32_t indirect2;          // 2. nepřímý odkaz (odkaz - odkaz - datové bloky)
 };
 
 /**
@@ -107,6 +108,18 @@ int32_t inode_data_index_from_address(char *filename, int32_t address);
 
 /**
  * Přidá nový ukazatel na datový blok pro strukturu
+ *
+ * @deprecated Prochází lineárně všechny existující odkazy a hledá volný odkaz - pomalé
+ *
+ * @param filename soubor VFS
+ * @param inode_ptr ukazatel na pozměňovaný inode
+ * @return výsledek operace
+ */
+bool inode_add_data_address_slow(char *filename, struct inode *inode_ptr, int32_t address);
+
+
+/**
+ * Přidá nový ukazatel na datový blok pro strukturu - rychlejší verze
  *
  * @param filename soubor VFS
  * @param inode_ptr ukazatel na pozměňovaný inode

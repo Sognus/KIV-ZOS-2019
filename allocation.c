@@ -141,6 +141,7 @@ bool allocation_clear_cluster(char *filename, int32_t address){
     // Kontrola adresy - rozsah
     if(address < superblock_ptr->data_start_address || address > superblock_ptr->disk_size){
         log_debug("allocation_clear_cluster: Adresa k vymazani dat je mimo povoleny rozsah!\n");
+        free(superblock_ptr);
         return -4;
     }
 
@@ -149,6 +150,7 @@ bool allocation_clear_cluster(char *filename, int32_t address){
     // Kontrola adresy - cluster
     if(cluster_index < 0){
         log_debug("allocation_clear_cluster: Adresa k vymazanim neukazuje na pocatek datoveho bloku!\n");
+        free(superblock_ptr);
         return -5;
     }
 
@@ -156,16 +158,19 @@ bool allocation_clear_cluster(char *filename, int32_t address){
 
     if(file == NULL){
         log_debug("allocation_clear_cluster: Nepodarilo se otevrit soubor k prepisu\n");
+        free(superblock_ptr);
         return -6;
     }
 
     fseek(file, address, SEEK_SET);
-    char zero = 0;
-    fwrite(&zero, sizeof(zero), superblock_ptr->cluster_size, file);
+    char *zero = malloc(superblock_ptr->cluster_size);
+    memset(zero, 0, superblock_ptr->cluster_size);
+    fwrite(zero, superblock_ptr->cluster_size, 1, file);
     fflush(file);
     fclose(file);
 
     log_trace("allocation_clear_cluster: Vynulovana data v clusteru %d\n", cluster_index);
-
+    free(zero);
+    free(superblock_ptr);
     return TRUE;
 }

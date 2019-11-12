@@ -23,10 +23,9 @@
 
 
 int main() {
-
-    const int32_t disk_size = 629145600;                                // 600MB
+    //const int32_t disk_size = 629145600;                                // 600MB
     //const int32_t disk_size = 52428800;                                 // 50MB
-    //const int32_t disk_size = 10485760;                                 // 10MB
+    const int32_t disk_size = 10485760;                                 // 10MB
     //const int32_t  disk_size = 65536;                                     // 64KB
 
     /*
@@ -116,7 +115,6 @@ int main() {
     int32_t iinode_free_index = inode_find_free_index(FILENAME);
     iinode->id = iinode_free_index + 1;
     inode_write_to_index(FILENAME, iinode_free_index, iinode);
-    int32_t last_index = -1;
 
     while(1){
         int32_t iicluster = bitmap_find_free_cluster_index(FILENAME);
@@ -124,16 +122,15 @@ int main() {
 
         int32_t iiaddr_add_result = inode_add_data_address(FILENAME, iinode, iiaddr);
 
-        if(iiaddr_add_result > 0){
-            last_index = iiaddr_add_result;
+        if(iiaddr_add_result == 0){
         }
         else{
-            printf("Test ended with code %d - last index = %d\n", iiaddr_add_result, last_index);
+            printf("Test ended with code %d\n", iiaddr_add_result);
             break;
         }
     }
 
-
+    free(iinode);
 
     /*
      * [ALOKACE]
