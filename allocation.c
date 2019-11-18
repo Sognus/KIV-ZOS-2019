@@ -5,6 +5,7 @@
 #include "debug.h"
 #include "parsing.h"
 #include "superblock.h"
+#include "bitmap.h"
 
 /**
  *
@@ -54,13 +55,28 @@ int32_t allocate_bytes(char *filename, int64_t bytes, struct inode *inode_ptr){
     int32_t clusters_needed = (int32_t)(ceil((double)(bytes)/(double)(cluster_size))) ;
     free(superblock_ptr);
 
-    return allocate_data_blocks(filename, clusters_needed, inode_ptr);
+    // Výsledek alokace data bloků
+    int32_t allocate_datablock_remaining = allocate_data_blocks(filename, clusters_needed, inode_ptr);
+
+    // Alokovali všechny nebo část data bloků
+    if(allocate_datablock_remaining >= 0){
+        int32_t clusters_allocated = clusters_needed - allocate_datablock_remaining;
+        int32_t bytes_remaining = bytes - (clusters_allocated * cluster_size);
+
+        if(bytes_remaining > 0){
+            // Návrat - počet nealokovaných byte
+            return bytes_remaining;
+        }
+        // Všechny bytes alokovány
+        return 0;
+    }
+    else{
+        // Nepodařilo se alokovat data bloky - CHYBA
+        return allocate_datablock_remaining;
+    }
 }
 
 /**
- * TODO: implement
- * TODO: implement
- *
  * Přidělí danému i-uzlu data bloky ve VFS, počet přidělených bloků je přímo předán
  * hodnotou funkce
  *
@@ -103,9 +119,31 @@ int32_t allocate_data_blocks(char *filename, int32_t allocation_size, struct ino
         return -5;
     }
 
-    // TODO: Ziskavani volnych bloku v cyklu dokud je potřeba ziskavat
-    // TODO: Zápis získaných bloků do inode
-    // TODO: přepis změn inode do VFS
+    //
+    int32_t allocation_count = allocation_size;
+    while(allocation_count > 0){
+        int32_t free_cluster_index = bitmap_find_free_cluster_index(filename);
+        int32_t free_cluster_address = bitmap_index_to_cluster_address(filename, free_cluster_index);
+
+
+        int32_t inode_datablock_add_result = -10;
+        if(free_cluster_address > 0){
+            inode_datablock_add_result = inode_add_data_address(filename, inode_ptr, free_cluster_address);
+
+        }
+
+        if(inode_datablock_add_result == 0){
+            // Data blok alokován (přidán do inode)
+            allocation_count--;
+        }
+        else{
+            // Počet nealokovaných data bloků
+            return allocation_count;
+        }
+
+    }
+
+    // Všechny databloky alokovány - zbylo 0 data bloků
     return 0;
 }
 

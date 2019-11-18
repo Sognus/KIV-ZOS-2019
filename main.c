@@ -7,26 +7,11 @@
 
 #define FILENAME "test.dat"
 
-/*
- * TODO:
- *      Kontrola alokace clusterů pro inode (OTESTOVAT)
- *          Opravit iteraci level 2
- *          optimalizace iterace level 2
- *              přečíst zda je poslední prvek v levelu 2 nastaven na nenulovou hodnotu -> nenulová hodnota = skip
- *      Výpočet ukazatele v inode na základě indexu
- *          1-5 -> direct [1-5]
- *          6 - 1030 -> indirect1
- *          1031 - 2055 -> indirect2 0
- *          2056 - 3080 -> indirect2 1
- *          etc
- */
-
-
 int main() {
     //const int32_t disk_size = 629145600;                                // 600MB
     //const int32_t disk_size = 52428800;                                 // 50MB
-    const int32_t disk_size = 10485760;                                 // 10MB
-    //const int32_t  disk_size = 65536;                                     // 64KB
+    //const int32_t disk_size = 10485760;                                 // 10MB
+    const int32_t  disk_size = 65536;                                     // 64KB
 
     /*
      * [TEST VYTVOŘENÍ SOUBORU]
@@ -110,6 +95,7 @@ int main() {
     /*
      * [PRÁCE S INODE - ZÁPIS]
      */
+    /*
     struct inode *iinode = malloc(sizeof(struct inode));
     memset(iinode, 0, sizeof(struct inode));
     int32_t iinode_free_index = inode_find_free_index(FILENAME);
@@ -131,11 +117,17 @@ int main() {
     }
 
     free(iinode);
+    */
 
     /*
      * [ALOKACE]
      */
-    //printf("Počet alokovaných clusterů: %d\n",allocate_bytes(FILENAME, 4097, NULL));
+    struct inode *iinode = malloc(sizeof(struct inode));
+    memset(iinode, 0, sizeof(struct inode));
+    int32_t iinode_free_index = inode_find_free_index(FILENAME);
+    iinode->id = iinode_free_index + 1;
+    inode_write_to_index(FILENAME, iinode_free_index, iinode);
+    printf("Nealokovaných byte: %d\n",allocate_bytes(FILENAME, 500000, iinode));
 
 
 }

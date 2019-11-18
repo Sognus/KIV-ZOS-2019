@@ -229,6 +229,7 @@ int32_t bitmap_index_to_cluster_address(char *filename, int32_t index){
     }
 
     int32_t address = superblock_ptr->data_start_address + (index * superblock_ptr->cluster_size);
+
     free(superblock_ptr);
     return address;
 
@@ -267,7 +268,7 @@ int32_t bitmap_find_free_cluster_index(char *filename){
     free(superblock_ptr);
 
     // Lineární prohledávání bitmapy
-    while(current_index < cluster_count){
+    while(current_index < cluster_count - 1){
         // Cluster je prázdný
         if(bitmap_get(filename, current_index) == FALSE){
             return current_index;
