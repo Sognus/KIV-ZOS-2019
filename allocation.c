@@ -138,12 +138,14 @@ int32_t allocate_data_blocks(char *filename, int32_t allocation_size, struct ino
         }
         else{
             // Počet nealokovaných data bloků
+            free(superblock_ptr);
             return allocation_count;
         }
 
     }
 
     // Všechny databloky alokovány - zbylo 0 data bloků
+    free(superblock_ptr);
     return 0;
 }
 

@@ -1,4 +1,6 @@
 #include "parsing.h"
+#include <stdlib.h>
+#include "structure.h"
 
 /**
  * Zkontroluje zda je možné umocnit číslo 2 tak, abychom
@@ -53,5 +55,32 @@ bool file_exist(char *path){
     return FALSE;
 
 
+}
+
+/**
+ * Převede typ souboru z čísla na řetězec
+ * @param type typ souboru
+ * @return ukazatel na řetězec
+ */
+char *filetype_to_name(int32_t type){
+    char *filetype = malloc(sizeof(char) * 32);
+
+    if(type == VFS_DIRECTORY){
+        strcpy(filetype, "+DIRECTORY");
+        return filetype;
+    }
+
+    if(type == VFS_FILE) {
+        strcpy(filetype, "-FILE");
+        return filetype;
+    }
+
+    if(type == VFS_SYMLINK) {
+        strcpy(filetype, "*SYMLINK");
+        return filetype;
+    }
+
+    free(filetype);
+    return NULL;
 }
 

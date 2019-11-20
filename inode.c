@@ -15,7 +15,7 @@
  */
 void inode_print(struct inode *ptr){
     if (ptr == NULL) {
-        log_trace("Ukazatel na strukturu superblock je NULL!\n");
+        log_trace("inode_print: Ukazatel na strukturu inode je NULL!\n");
         return;
     }
 
@@ -173,6 +173,7 @@ int32_t inode_find_free_index(char *filename){
 
     // Ověření otevření souboru
     if(file == NULL){
+        free(superblock_ptr);
         return -4;
     }
 
@@ -201,6 +202,7 @@ int32_t inode_find_free_index(char *filename){
     // Uvolnění superbloku
     free(superblock_ptr);
     free(inode_ptr);
+    fclose(file);
 
     // Návrat indexu
     return index;
@@ -257,6 +259,7 @@ struct inode *inode_read_by_address(char *filename, int32_t inode_address){
 
     // Ověření adresy ke čtení
     if(inode_address > superblock_ptr->data_start_address - sizeof(struct inode)){
+        free(superblock_ptr);
         return NULL;
     }
 
@@ -265,6 +268,7 @@ struct inode *inode_read_by_address(char *filename, int32_t inode_address){
 
     // Ověření otevření souboru
     if(file == NULL){
+        free(superblock_ptr);
         return NULL;
     }
 
@@ -275,14 +279,16 @@ struct inode *inode_read_by_address(char *filename, int32_t inode_address){
 
     //Inode je prázdná
     if(inode_ptr->id == 0){
+        free(superblock_ptr);
+        free(inode_ptr);
         return NULL;
     }
 
+    free(superblock_ptr);
     return inode_ptr;
 }
 
 /**
- * TODO: Přesun do allocation
  *
  * Kontrolní funkce, která ověří, zda lze převést adresu na index data bloku
  *
@@ -363,8 +369,6 @@ bool inode_add_data_address_slow(char *filename, struct inode *inode_ptr, int32_
     if(inode_data_index_from_address(filename, address) < 0){
         return -4;
     }
-
-    // TODO: Kontrola jestli už je adresa/index použitá (možná)
 
     bool address_writen = FALSE;
     int32_t index_written = -50;
@@ -757,7 +761,7 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
                   inode_ptr->indirect2);
     }
 
-    // TODO: komentář
+    // Zápis databloků pro indirect2
     if(address_writen == FALSE && inode_ptr->allocated_clusters > 1028 && inode_ptr->indirect2 != 0){
         int32_t indirect2_level1_write_index = (int32_t)floor(((double)(inode_ptr->allocated_clusters-1029))/1024);
         int32_t indirect2_level2_write_index = (inode_ptr->allocated_clusters - 1029) % 1024;

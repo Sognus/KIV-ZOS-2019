@@ -38,4 +38,11 @@ bool is_two_power(int32_t number);
  */
 bool file_exist(char *path);
 
+/**
+ * Převede typ souboru z čísla na řetězec
+ * @param type typ souboru
+ * @return ukazatel na řetězec
+ */
+char *filetype_to_name(int32_t type);
+
 #endif //KIV_ZOS_PARSING_H
