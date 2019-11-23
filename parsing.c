@@ -46,8 +46,8 @@ bool file_exist(char *path){
     }
 
     // Pokus o otevření souboru
-    FILE *file;
-    if ((file = fopen(path, "r")))
+    FILE *file = fopen(path, "r");
+    if (file != NULL)
     {
         fclose(file);
         return TRUE;
@@ -70,7 +70,7 @@ char *filetype_to_name(int32_t type){
         return filetype;
     }
 
-    if(type == VFS_FILE) {
+    if(type == VFS_FILE_TYPE) {
         strcpy(filetype, "-FILE");
         return filetype;
     }

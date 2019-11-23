@@ -623,6 +623,155 @@ bool inode_add_data_address_slow(char *filename, struct inode *inode_ptr, int32_
     return address_writen;
 }
 
+/**
+ * Získá adresu uloženou na daném indexu uložených databloků
+ *
+ * @param filename soubor VFS
+ * @param inode_ptr struktura inode
+ * @param index index odkazu v inode
+ * @return (return <= 0: chyba | return > 0: adresa databloku ve VFS)
+ */
+int32_t inode_get_datablock_index_value(char *filename, struct inode *inode_ptr, int32_t index){
+    // Kontrola délky názvu souboru
+    if(strlen(filename) < 1){
+        return -1;
+    }
+
+    // Ověření existence souboru
+    if(file_exist(filename) != TRUE){
+        return -2;
+    }
+
+    // Získání superbloku ze souboru
+    struct superblock *superblock_ptr = superblock_from_file(filename);
+
+    // Ověření ziskání superbloku
+    if(superblock_ptr == NULL){
+        return -3;
+    }
+
+    // Kontrola ukazatele na inode
+    if(inode_ptr == NULL) {
+        free(superblock_ptr);
+        return -4;
+    }
+
+    // Pokud se pokusíme přistoupit k indexu, který není alokován -> chyba
+    if(index > inode_ptr->allocated_clusters){
+        free(superblock_ptr);
+        return -5;
+    }
+
+    // Přímé ukazatele 0-4
+    if(index == 0){
+        free(superblock_ptr);
+        log_trace("inode_get_datablock_index_value: 0 -> direct1 -> %d\n", inode_ptr->direct1);
+        return inode_ptr->direct1;
+    }
+
+    if(index == 1){
+        free(superblock_ptr);
+        log_trace("inode_get_datablock_index_value: 1 -> direct2 -> %d\n", inode_ptr->direct2);
+        return inode_ptr->direct2;
+    }
+
+    if(index == 2){
+        free(superblock_ptr);
+        log_trace("inode_get_datablock_index_value: 2 -> direct3 -> %d\n", inode_ptr->direct3);
+        return inode_ptr->direct3;
+    }
+
+    if(index == 3){
+        free(superblock_ptr);
+        log_trace("inode_get_datablock_index_value: 3 -> direct4 -> %d\n", inode_ptr->direct4);
+        return inode_ptr->direct4;
+    }
+
+    if(index == 4){
+        free(superblock_ptr);
+        log_trace("inode_get_datablock_index_value: 4 -> direct5 -> %d\n", inode_ptr->direct5);
+        return inode_ptr->direct5;
+    }
+
+    // 1. Nepřímý ukazatel: 5-1028
+    if(index > 4 && index < 1029) {
+        int32_t indirect1_index = index - 5;
+        int32_t indirect1_address = inode_ptr->indirect1 + (indirect1_index * sizeof(int32_t));
+
+        // Alokace paměti pro čtení
+        int32_t *indirect_address_read = malloc(sizeof(int32_t));
+        // Nulování obsahu paměti
+        (*indirect_address_read) = 0;
+        // Otevření souboru ke čtení
+        FILE *file = fopen(filename, "r+b");
+        // Nastavení ukazatele
+        fseek(file, indirect1_address, SEEK_SET);
+        // Přečtení data
+        fread(indirect_address_read, sizeof(int32_t), 1, file);
+
+        // Přesun dat na heap
+        int32_t data_rtn = (*indirect_address_read);
+        // Uvolnění zdrojů
+        fclose(file);
+        free(indirect_address_read);
+
+        // Návrat hodnoty
+        log_trace("inode_get_datablock_index_value: %d -> indirect1[%d] -> %d\n", index, indirect1_index, inode_ptr->direct1);
+        free(superblock_ptr);
+        return data_rtn;
+    }
+
+    if(index > 1028){
+        int32_t indirect2_level1_index = (int32_t)floor(((double)(index-1029))/1024);
+        int32_t indirect2_level2_index = (index - 1029) % 1024;
+
+        // Otevření souboru ke čtení a zápisu
+        FILE *indirect2_file = fopen(filename, "r+b");
+
+        // Získání adresy ukazatele na datablok - úroven 1
+        int32_t indirect2_level1_address = inode_ptr->indirect2 + (indirect2_level1_index * sizeof(int32_t));
+
+        // Alokace paměti pro čtení
+        int32_t *indirect2_level1_data = malloc(sizeof(int32_t));
+        int32_t *indirect2_level2_data = malloc(sizeof(int32_t));
+
+        // Nulování paměti
+        memset(indirect2_level1_data, 0, sizeof(int32_t));
+        // Nastavení místa čtení v souboru
+        fseek(indirect2_file, indirect2_level1_address, SEEK_SET);
+        // Čtení dat
+        fread(indirect2_level1_data, sizeof(int32_t), 1, indirect2_file);
+
+        // Čtení adresy level2
+        if(*indirect2_level1_data != 0){
+            // Adresa kam zapsat
+            int32_t indirect2_level2_address = *indirect2_level1_data + (indirect2_level2_index * sizeof(int32_t));
+
+            // Zápis adresy na level 2
+            fseek(indirect2_file, indirect2_level2_address, SEEK_SET);
+            fread(indirect2_level2_data, sizeof(int32_t), 1, indirect2_file);
+        }
+
+        // Uvolnění zdrojů a přesun na heap
+        free(indirect2_level1_data);
+        int32_t rtn_data = (*indirect2_level2_data);
+
+        // Logging
+        log_trace("inode_get_datablock_index_value: %d -> indirect2[%d][%d] -> %d\n", index, indirect2_level1_index, indirect2_level2_index, rtn_data);
+
+        free(indirect2_level2_data);
+        free(superblock_ptr);
+        return rtn_data;
+
+    }
+
+    free(superblock_ptr);
+    return 0;
+
+
+
+}
+
 
 /**
  * Přidá nový ukazatel na datový blok pro strukturu - rychlejší verze
@@ -732,7 +881,7 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
         fflush(indirect1_file_write);
         fclose(indirect1_file_write);
 
-        log_trace("inode_add_data_address: Adresa databloku ulozena do indirect1[%d] (addr: %d, pointer_index: %d)\n", indirect1_write_index, indirect1_write_address, inode_ptr->allocated_clusters);
+        log_trace("inode_add_data_address: Adresa databloku ulozena do indirect1[%d] (addr: %d, value: %d, pointer_index: %d)\n", indirect1_write_index, indirect1_write_address, address, inode_ptr->allocated_clusters);
         address_writen = TRUE;
 
     }
@@ -828,7 +977,7 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
             fflush(indirect2_file);
 
             // Logování
-            log_trace("inode_add_data_address: Adresa databloku ulozena do indirect2[%d][%d] (addr: %d, pointer_index: %d)\n", indirect2_level1_write_index, indirect2_level2_write_index, indirect2_level2_address, inode_ptr->allocated_clusters);
+            log_trace("inode_add_data_address: Adresa databloku ulozena do indirect2[%d][%d] (addr: %d, value: %d, pointer_index: %d)\n", indirect2_level1_write_index, indirect2_level2_write_index, indirect2_level2_address, address, inode_ptr->allocated_clusters);
             address_writen = TRUE;
 
         }

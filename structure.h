@@ -19,7 +19,7 @@
 #define IMPL_NON_DATA_PERCENTAGE 4
 #define IMPL_CLUSTER_SIZE 4096
 
-#define VFS_FILE 0
+#define VFS_FILE_TYPE 0
 #define VFS_DIRECTORY 1
 #define VFS_SYMLINK 2
 

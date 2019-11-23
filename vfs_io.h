@@ -54,4 +54,21 @@ size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, 
  */
 VFS_FILE *vfs_open(char *vfs_file, char *vfs_path);
 
+/**
+ * Vytvoří kontext pro práci souboru - vždycky lze provádět čtení i zápis zároveň
+ *
+ * @param vfs_file cesta k souboru vfs.dat (apod.)
+ * @param vfs_path ID inode k otevření
+ * @return
+ */
+VFS_FILE *vfs_open_inode(char *vfs_file, int32_t inode_id);
+
+/**
+ * Zavře virtuální soubor a uvolní pamět
+ *
+ * @param file virtuální soubor k zavření
+ * @return indikace výsledku
+ */
+bool vfs_close(VFS_FILE *file);
+
 #endif //KIV_ZOS_VFS_IO_H

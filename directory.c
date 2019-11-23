@@ -92,10 +92,15 @@ int32_t directory_create(char *vfs_file, char *path){
         strcpy(entry->name, "..\0");
         fwrite(entry, sizeof(struct directory_entry), 1, file);
 
+        // Zapis velikosti
+        inode_ptr->file_size = 2 * sizeof(struct directory_entry);
+        inode_write_to_index(vfs_file, 0, inode_ptr);
+
         // Uvolnění zdrojůf
         free(entry);
         fclose(file);
         free(inode_ptr);
+
     }
     else{
         // TODO: implement

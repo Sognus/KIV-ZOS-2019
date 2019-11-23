@@ -127,4 +127,14 @@ bool inode_add_data_address_slow(char *filename, struct inode *inode_ptr, int32_
  */
 bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t address);
 
+/**
+ * Získá adresu uloženou na daném indexu uložených databloků
+ *
+ * @param filename soubor VFS
+ * @param inode_ptr struktura inode
+ * @param index index odkazu v inode
+ * @return (return <= 0: chyba | return > 0: adresa databloku ve VFS)
+ */
+int32_t inode_get_datablock_index_value(char *filename, struct inode *inode_ptr, int32_t index);
+
 #endif //KIV_ZOS_INODE_H
