@@ -223,7 +223,8 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
         memcpy(destination, buffer, successfull_read);
 
 
-        // TODO: memcpy z bufferu do výsledku, uvolnění bufferu
+        // TODO: TEST memcpy z bufferu do výsledku + uvolnění bufferu
+        // TODO: Posun seek o velikost čtení
 
     }
 
@@ -243,7 +244,7 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
  * @return počet zapsaných byte
  */
 size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, VFS_FILE *vfs_file) {
-    // TODO: implement
+    // TODO: implement vfs_write
     return 0;
 }
 
@@ -288,7 +289,7 @@ VFS_FILE *vfs_open(char *vfs_file, char *vfs_path) {
     if (strcmp(vfs_path, "/") == 0) {
         return vfs_open_inode(vfs_file, 1);
     } else {
-        // tODO: implement
+        // tODO: implement - open nonroot folders (need vfs_write, vfs_read completed first)
     }
 
     return 0;
