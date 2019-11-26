@@ -34,7 +34,7 @@ int main() {
      * [ALOKACE DATABLOKŮ PRO TEST VFS_IO
      */
     struct inode *iinode = inode_read_by_index( FILENAME,0);
-    for(int i = 0; i < 1100; i++){
+    for(int i = 0; i < 100; i++){
         int32_t free_index = bitmap_find_free_cluster_index(FILENAME);
         int32_t free_address = bitmap_index_to_cluster_address(FILENAME, free_index);
 

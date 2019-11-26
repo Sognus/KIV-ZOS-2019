@@ -222,9 +222,8 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
         // Přesun dat z bufferu do destination
         memcpy(destination, buffer, successfull_read);
 
-
         // TODO: TEST memcpy z bufferu do výsledku + uvolnění bufferu
-        // TODO: Posun seek o velikost čtení
+        vfs_seek(vfs_file, successfull_read, SEEK_CUR);
 
     }
 
