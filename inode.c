@@ -761,6 +761,7 @@ int32_t inode_get_datablock_index_value(char *filename, struct inode *inode_ptr,
 
         free(indirect2_level2_data);
         free(superblock_ptr);
+        fclose(indirect2_file);
         return rtn_data;
 
     }

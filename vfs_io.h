@@ -7,7 +7,7 @@
 
 // Struktura pro uložení kontextu při práci se souborem uvnitř inode
 typedef struct VFS_FILE {
-    char *vfs_file;                 // Ukazatel na řetězec s cestou k datovému souboru VFS
+    char *vfs_filename;                 // Ukazatel na řetězec s cestou k datovému souboru VFS
     struct inode *inode_ptr;        // Ukazatel na inode, se kterou pracujeme
     int64_t offset;                 // Počet bytů od začátku souboru odkud čteme
 } VFS_FILE;

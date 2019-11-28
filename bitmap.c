@@ -168,6 +168,7 @@ bool bitmap_get(char *filename, int32_t index) {
 
     // Ověření validity čtení
     if(index < 0 || index > superblock_ptr->cluster_count){
+        free(superblock_ptr);
         log_debug("bitmap_get: Index je mimo povoleny rozsah!\n");
         return -4;
     }
@@ -177,12 +178,13 @@ bool bitmap_get(char *filename, int32_t index) {
 
     // Ověření otevření souboru
     if(file == NULL) {
+        free(superblock_ptr);
         log_debug("bitmap_get: Nepodarilo se otevrit soubor ke cteni!\n");
         return -5;
     }
 
     bool value = -6;
-    int32_t read_address = superblock_ptr->bitmap_start_address + index * sizeof(bool);
+    int32_t read_address = superblock_ptr->bitmap_start_address + (index * sizeof(bool));
     fseek(file, read_address, SEEK_SET);
     fread(&value, sizeof(bool), 1, file);
 

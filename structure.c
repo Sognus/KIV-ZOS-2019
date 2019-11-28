@@ -92,7 +92,7 @@ bool structure_calculate(struct superblock *superblock_ptr) {
  */
 void file_set_size(FILE *vfs_file, int32_t size){
     #ifdef _WIN32
-        int fileno = _fileno(vfs_file);
+        int fileno = _fileno(vfs_filename);
         HANDLE handle = (HANDLE) _get_osfhandle(fileno);
         SetFilePointer(handle, size - sizeof(struct superblock), 0, FILE_END);
         SetEndOfFile(handle);

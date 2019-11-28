@@ -198,7 +198,7 @@ struct superblock* superblock_from_file(char *filename){
     }
 
     // Otevření souboru pro čtení
-    FILE *file = fopen(filename, "rb");
+    FILE *file = fopen(filename, "r+b");
 
     if(file == NULL){
         log_trace("Soubor %s se nepodarilo otevrit!\n", filename);
@@ -206,6 +206,7 @@ struct superblock* superblock_from_file(char *filename){
     }
 
     struct superblock *ptr = malloc(sizeof(struct superblock));
+    memset(ptr, 0, sizeof(struct superblock));
     fseek(file, 0, SEEK_SET);
     fread(ptr, sizeof(struct superblock), 1, file);
 

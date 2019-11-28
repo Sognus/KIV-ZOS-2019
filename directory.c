@@ -16,13 +16,13 @@
 int32_t directory_create(char *vfs_file, char *path){
     // Ověřování NULL
     if(vfs_file == NULL){
-        log_debug("directory_create: Argument vfs_file nemuze byt NULL!\n");
+        log_debug("directory_create: Argument vfs_filename nemuze byt NULL!\n");
         return -1;
     }
 
     // Kontrola délky názvu souboru
     if(strlen(vfs_file) < 1){
-        log_debug("directory_create: Argument vfs_file nemuze byt prazdnym retezcem!\n");
+        log_debug("directory_create: Argument vfs_filename nemuze byt prazdnym retezcem!\n");
         return -2;
     }
 
@@ -46,13 +46,6 @@ int32_t directory_create(char *vfs_file, char *path){
 
     // Speciální případ pro root složku
     if(strcmp(path, "/") == 0){
-        // Otevreni souboru pro cteni
-        FILE *file = fopen(vfs_file, "r+b");
-
-        if(file == NULL) {
-            log_error("directory_create: Nepodarilo se otevrit VFS\n!");
-            return -6;
-        }
 
         // Zjištění volného indexu pro INODE -> index != 0 => máme již root
         int32_t inode_free_index = inode_find_free_index(vfs_file);
@@ -61,6 +54,15 @@ int32_t directory_create(char *vfs_file, char *path){
             log_debug("directory_create: Korenova slozka jiz existuje!");
             return -7;
         }
+
+        // Otevreni souboru pro cteni
+        FILE *file = fopen(vfs_file, "r+b");
+
+        if(file == NULL) {
+            log_error("directory_create: Nepodarilo se otevrit VFS\n!");
+            return -6;
+        }
+
         // Vytvoření struktury INODE
         struct inode *inode_ptr = malloc(sizeof(struct inode));
         // Nulování struktury INODE
@@ -74,6 +76,7 @@ int32_t directory_create(char *vfs_file, char *path){
         // Test alokace
         if(allocate_result != 0){
             free(inode_ptr);
+            fclose(file);
             log_error("directory_create: Nepodařilo se alokovat datablok pro složku - vysledek operace %d\n", allocate_result);
             return -8;
         }
@@ -119,13 +122,13 @@ int32_t directory_create(char *vfs_file, char *path){
 int32_t directory_entries_print(char *vfs_file, char *path){
     // Ověřování NULL
     if(vfs_file == NULL){
-        log_debug("directory_entries_print: Argument vfs_file nemuze byt NULL!\n");
+        log_debug("directory_entries_print: Argument vfs_filename nemuze byt NULL!\n");
         return -1;
     }
 
     // Kontrola délky názvu souboru
     if(strlen(vfs_file) < 1){
-        log_debug("directory_entries_print: Argument vfs_file nemuze byt prazdnym retezcem!\n");
+        log_debug("directory_entries_print: Argument vfs_filename nemuze byt prazdnym retezcem!\n");
         return -2;
     }
 
@@ -149,20 +152,11 @@ int32_t directory_entries_print(char *vfs_file, char *path){
 
     // Speciální případ /
     if(strcmp(path, "/") == 0){
-        // Otevření souboru VFS
-        FILE *file = fopen(vfs_file, "r+b");
-
-        // Otevření otevření souboru
-        if(file == NULL){
-            log_debug("directory_entries_print: Nelze cist soubor VFS!\n");
-            return -6;
-        }
-
         struct superblock *superblock_ptr = superblock_from_file(vfs_file);
 
         if(superblock_ptr == NULL){
             log_debug("directory_entries_print: Nelze ziskat superblock z VFS!\n");
-            return -7;
+            return -6;
         }
 
         int32_t inode_id = 1;
@@ -172,6 +166,15 @@ int32_t directory_entries_print(char *vfs_file, char *path){
         if(inode_ptr == NULL){
             free(superblock_ptr);
             log_debug("directory_entries_print: Nelze precist inode pro korenovou slozku!\n");
+            return -7;
+        }
+
+        // Otevření souboru VFS
+        FILE *file = fopen(vfs_file, "r+b");
+
+        // Otevření otevření souboru
+        if(file == NULL){
+            log_debug("directory_entries_print: Nelze cist soubor VFS!\n");
             return -7;
         }
 

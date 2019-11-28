@@ -11,9 +11,9 @@
 
 int main() {
     //const int32_t disk_size = 629145600;                                // 600MB
-    const int32_t disk_size = 52428800;                                 // 50MB
+    //const int32_t disk_size = 52428800;                                 // 50MB
     //const int32_t disk_size = 10485760;                                 // 10MB
-    //const int32_t  disk_size = 65536;                                     // 64KB
+    const int32_t  disk_size = 65536;                                     // 64KB
 
     /*
      * [TEST VYTVOŘENÍ VFS]
@@ -22,49 +22,40 @@ int main() {
     struct superblock *ptr = superblock_impl_alloc(disk_size);
     structure_calculate(ptr);
     superblock_print(ptr);
-    vfs_create(FILENAME,ptr);
+    vfs_create(FILENAME, ptr);
 
     /*
      * [TEST VYTVOŘENÍ SLOŽKY]
      */
     directory_create(FILENAME, "/");
-    directory_entries_print(FILENAME, "/");
+    //directory_entries_print(FILENAME, "/");
+
 
     /*
-     * [ALOKACE DATABLOKŮ PRO TEST VFS_IO
+     * [ČTENÍ A ZÁPIS DAT]
      */
-    struct inode *iinode = inode_read_by_index( FILENAME,0);
-    for(int i = 0; i < 100; i++){
-        int32_t free_index = bitmap_find_free_cluster_index(FILENAME);
-        int32_t free_address = bitmap_index_to_cluster_address(FILENAME, free_index);
+    VFS_FILE *vfs_file = vfs_open_inode(FILENAME, 1);
 
-        inode_add_data_address(FILENAME, iinode, free_address);
-    }
+    // Zápis
+    vfs_seek(vfs_file, 0, SEEK_END);
+    char *src_txt = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Integer vulputate sem a nibh rutrum consequat. Fusce tellus odio, dapibus id fermentum quis, suscipit id erat. Nulla pulvinar eleifend sem. Pellentesque ipsum. Etiam ligula pede, sagittis quis, interdum ultricies, scelerisque eu. Pellentesque sapien. Integer rutrum, orci vestibulum ullamcorper ultricies, lacus quam ultricies odio, vitae placerat pede sem sit amet enim. Praesent in mauris eu tortor porttitor accumsan. Quisque porta. Aliquam ante. In convallis. In dapibus augue non sapien. Mauris tincidunt sem sed arcu. Nullam rhoncus aliquam metus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In rutrum. Etiam dictum tincidunt diam. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. Etiam quis quam. Curabitur ligula sapien, pulvinar a vestibulum quis, facilisis vel sapien. Pellentesque arcu. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. In sem justo, commodo ut, suscipit at, pharetra vitae, orci. Fusce consectetuer risus a nunc. Curabitur bibendum justo non orci. Nullam feugiat, turpis at pulvinar vulputate, erat libero tristique tellus, nec bibendum odio risus sit amet ante. Aliquam erat volutpat. Etiam quis quam. Duis condimentum augue id magna semper rutrum. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Integer vulputate sem a nibh rutrum consequat. Fusce tellus odio, dapibus id fermentum quis, suscipit id erat. Nulla pulvinar eleifend sem. Pellentesque ipsum. Etiam ligula pede, sagittis quis, interdum ultricies, scelerisque eu. Pellentesque sapien. Integer rutrum, orci vestibulum ullamcorper ultricies, lacus quam ultricies odio, vitae placerat pede sem sit amet enim. Praesent in mauris eu tortor porttitor accumsan. Quisque porta. Aliquam ante. In convallis. In dapibus augue non sapien. Mauris tincidunt sem sed arcu. Nullam rhoncus aliquam metus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In rutrum. Etiam dictum tincidunt diam. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. Etiam quis quam. Curabitur ligula sapien, pulvinar a vestibulum quis, facilisis vel sapien. Pellentesque arcu. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. In sem justo, commodo ut, suscipit at, pharetra vitae, orci. Fusce consectetuer risus a nunc. Curabitur bibendum justo non orci. Nullam feugiat, turpis at pulvinar vulputate, erat libero tristique tellus, nec bibendum odio risus sit amet ante. Aliquam erat volutpat. Etiam quis quam. Duis condimentum augue id magna semper rutrum. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Integer vulputate sem a nibh rutrum consequat. Fusce tellus odio, dapibus id fermentum quis, suscipit id erat. Nulla pulvinar eleifend sem. Pellentesque ipsum. Etiam ligula pede, sagittis quis, interdum ultricies, scelerisque eu. Pellentesque sapien. Integer rutrum, orci vestibulum ullamcorper ultricies, lacus quam ultricies odio, vitae placerat pede sem sit amet enim. Praesent in mauris eu tortor porttitor accumsan. Quisque porta. Aliquam ante. In convallis. In dapibus augue non sapien. Mauris tincidunt sem sed arcu. Nullam rhoncus aliquam metus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In rutrum. Etiam dictum tincidunt diam. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. Etiam quis quam. Curabitur ligula sapien, pulvinar a vestibulum quis, facilisis vel sapien. Pellentesque arcu. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. In sem justo, commodo ut, suscipit at, pharetra vitae, orci. Fusce consectetuer risus a nunc. Curabitur bibendum justo non orci. Nullam feugiat, turpis at pulvinar vulputate, erat libero tristique tellus, nec bibendum odio risus sit amet ante. Aliquam erat volutpat. Etiam quis quam. Duis condimentum augue id magna semper rutrum. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Integer vulputate sem a nibh rutrum consequat. Fusce tellus odio, dapibus id fermentum quis, suscipit id erat. Nulla pulvinar eleifend sem. Pellentesque ipsum. Etiam ligula pede, sagittis quis, interdum ultricies, scelerisque eu. Pellentesque sapien. Integer rutrum, orci vestibulum ullamcorper ultricies, lacus quam ultricies odio, vitae placerat pede sem sit amet enim. Praesent in mauris eu tortor porttitor accumsan. Quisque porta. Aliquam ante. In convallis. In dapibus augue non sapien. Mauris tincidunt sem sed arcu. Nullam rhoncus aliquam metus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In rutrum. Etiam dictum tincidunt diam. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. Etiam quis quam. Curabitur ligula sapien, pulvinar a vestibulum quis, facilisis vel sapien. Pellentesque arcu. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. In sem justo, commodo ut, suscipit at, pharetra vitae, orci. Fusce consectetuer risus a nunc. Curabitur bibendum justo non orci. Nullam feugiat, turpis at pulvinar vulputate, erat libero tristique tellus, nec bibendum odio risus sit amet ante. Aliquam erat volutpat. Etiam quis quam. Duis condimentum augue id magna semper rutrum. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Integer vulputate sem a nibh rutrum consequat. Fusce tellus odio, dapibus id fermentum quis, suscipit id erat. Nulla pulvinar eleifend sem. Pellentesque ipsum. Etiam ligula pede, sagittis quis, interdum ultricies, scelerisque eu. Pellentesque sapien. Integer rutrum, orci vestibulum ullamcorper ultricies, lacus quam ultricies odio, vitae placerat pede sem sit amet enim. Praesent in mauris eu tortor porttitor accumsan. Quisque porta. Aliquam ante. In convallis. In dapibus augue non sapien. Mauris tincidunt sem sed arcu. Nullam rhoncus aliquam metus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In rutrum. Etiam dictum tincidunt diam. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. Etiam quis quam. Curabitur ligula sapien, pulvinar a vestibulum quis, facilisis vel sapien. Pellentesque arcu. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. In sem justo, commodo ut, suscipit at, pharetra vitae, orci. Fusce consectetuer risus a nunc. Curabitur bibendum justo non orci. Nullam feugiat, turpis at pulvinar vulputate, erat libero tristique tellus, nec bibendum odio risus sit amet ante. Aliquam erat volutpat. Etiam quis quam. Duis condimentum augue id magna semper rutrum. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Integer vulputate sem a nibh rutrum consequat. Fusce tellus odio, dapibus id fermentum quis, suscipit id erat. Nulla pulvinar eleifend sem. Pellentesque ipsum. Etiam ligula pede, sagittis quis, interdum ultricies, scelerisque eu. Pellentesque sapien. Integer rutrum, orci vestibulum ullamcorper ultricies, lacus quam ultricies odio, vitae placerat pede sem sit amet enim. Praesent in mauris eu tortor porttitor accumsan. Quisque porta. Aliquam ante. In convallis. In dapibus augue non sapien. Mauris tincidunt sem sed arcu. Nullam rhoncus aliquam metus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In rutrum. Etiam dictum tincidunt diam. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. Etiam quis quam. Curabitur ligula sapien, pulvinar a vestibulum quis, facilisis vel sapien. Pellentesque arcu. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. In sem justo, commodo ut, suscipit at, pharetra vitae, orci. Fusce consectetuer risus a nunc. Curabitur bibendum justo non orci. Nullam feugiat, turpis at pulvinar vulputate, erat libero tristique tellus, nec bibendum odio risus sit amet ante. Aliquam erat volutpat. Etiam quis quam. Duis condimentum augue id magna semper rutrum. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Integer vulputate sem a nibh rutrum consequat. Fusce tellus odio, dapibus id fermentum quis, suscipit id erat. Nulla pulvinar eleifend sem. Pellentesque ipsum. Etiam ligula pede, sagittis quis, interdum ultricies, scelerisque eu. Pellentesque sapien. Integer rutrum, orci vestibulum ullamcorper ultricies, lacus quam ultricies odio, vitae placerat pede sem sit amet enim. Praesent in mauris eu tortor porttitor accumsan. Quisque porta. Aliquam ante. In convallis. In dapibus augue non sapien. Mauris tincidunt sem sed arcu. Nullam rhoncus aliquam metus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In rutrum. Etiam dictum tincidunt diam. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. Etiam quis quam. Curabitur ligula sapien, pulvinar a vestibulum quis, facilisis vel sapien. Pellentesque arcu. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. In sem justo, commodo ut, suscipit at, pharetra vitae, orci. Fusce consectetuer risus a nunc. Curabitur bibendum justo non orci. Nullam feugiat, turpis at pulvinar vulputate, erat libero tristique tellus, nec bibendum odio risus sit amet ante. Aliquam erat volutpat. Etiam quis quam. Duis condimentum augue id magna semper rutrum. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Integer vulputate sem a nibh rutrum consequat. Fusce tellus odio, dapibus id fermentum quis, suscipit id erat. Nulla pulvinar eleifend sem. Pellentesque ipsum. Etiam ligula pede, sagittis quis, interdum ultricies, scelerisque eu. Pellentesque sapien. Integer rutrum, orci vestibulum ullamcorper ultricies, lacus quam ultricies odio, vitae placerat pede sem sit amet enim. Praesent in mauris eu tortor porttitor accumsan. Quisque porta. Aliquam ante. In convallis. In dapibus augue non sapien. Mauris tincidunt sem sed arcu. Nullam rhoncus aliquam metus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In rutrum. Etiam dictum tincidunt diam. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. Etiam quis quam. Curabitur ligula sapien, pulvinar a vestibulum quis, facilisis vel sapien. Pellentesque arcu. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. In sem justo, commodo ut, suscipit at, pharetra vitae, orci. Fusce consectetuer risus a nunc. Curabitur bibendum justo non orci. Nullam feugiat, turpis at pulvinar vulputate, erat libero tristique tellus, nec bibendum odio risus sit amet ante. Aliquam erat volutpat. Etiam quis quam. Duis condimentum augue id magna semper rutrum. ";
+    char *text = calloc(sizeof(char),strlen(src_txt)+1);
+    memset(text, 0, strlen(src_txt)+1);
+    strcpy(text, src_txt);
+    printf("strlen source text: %lu\n", strlen(text));
+    vfs_write(text, strlen(text), 1, vfs_file);
 
-    /*
-     * [ TEST VFS_IO]
-     */
+    // Čtení
+    vfs_seek(vfs_file, 32, SEEK_SET);
+    memset(text, 0, strlen(src_txt)+1);
+    vfs_read(text, strlen(src_txt), 1, vfs_file);
 
-    // Příprava dat
-    FILE *fff = fopen(FILENAME, "r+b");
-    char *data = "data123pocitac243omalovanky989ahojtest56658";
-    fseek(fff, 2097153, SEEK_SET);
-    fwrite(data, strlen(data), 1, fff);
-    fclose(fff);
+    log_info("Strlen read: %d\n", strlen(text));
+    log_info("Read result: %s\n", text);
 
-    // Test
-    VFS_FILE *file = vfs_open_inode(FILENAME, 1);
-    char *buffer = malloc(sizeof(char) * 32 + 1);
-    memset(buffer, 0, sizeof(char) * 32 + 1);
-    vfs_seek(file, -5, SEEK_END);
-    vfs_read(buffer, 5,1, file);
-    printf("Read data: %s\n", buffer);
+    free(text);
 
-    //int32_t ggg = inode_get_datablock_index_value(FILENAME, file->inode_ptr, 1050);
-    //log_debug("TEST_DATABLOCK_INDEX: %d\n", ggg);
+    vfs_close(vfs_file);
 
-    vfs_close(file);
-    free(buffer);
     free(ptr);
-    free(iinode);
 }
