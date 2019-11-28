@@ -147,6 +147,8 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
         fread(destination, read_item_size, read_item_count, file);
         // Logging
         log_trace("vfs_read: Celkem precteno %d byte z 1 databloku.\n", (read_item_count * read_item_size));
+        // Posun offsetu o přečtená data
+        vfs_seek(vfs_file, temp_total_read_size, SEEK_CUR);
 
     } else {
         // Výpočet kolik byte zbývá přečíst po 1. databloku
@@ -229,7 +231,7 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
         // Přesun dat z bufferu do destination
         memcpy(destination, buffer, successfull_read);
 
-        // TODO: TEST memcpy z bufferu do výsledku + uvolnění bufferu
+        // Posun offsetu o přečtená data
         vfs_seek(vfs_file, successfull_read, SEEK_CUR);
 
         // Uvolnění zdrojů
@@ -375,12 +377,14 @@ size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, 
         int32_t data_written = (write_pointer - source);
         int32_t data_append = data_written - (-1 * temp_rewritten);
         // Logging
-        log_trace("vfs_write: Celkem zapsano %d byte do 1 databloku.\n", (write_pointer - source));
+        log_trace("vfs_write: Celkem zapsano %d byte (soubor zvetsen o %d byte)\n", data_written, data_append);
 
         // Zvětšení velikosti souboru
         vfs_file->inode_ptr->file_size += data_append;
         // Aktualizace inode ve VFS
         inode_write_to_index(vfs_file->vfs_filename, vfs_file->inode_ptr->id - 1, vfs_file->inode_ptr);
+        // Posun offsetu
+        vfs_seek(vfs_file, data_written, SEEK_CUR);
     } else {
         // Kolik musíme zapsat po 1. databloku
         int32_t remaining_write = temp_total_write_size - first_datablock_can_write;
@@ -453,14 +457,18 @@ size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, 
         int32_t data_written = curr_write_pointer - source;
         int32_t data_append = data_written - (-1 * temp_rewritten);
         // Logging
-        log_trace("vfs_write: Celkem zapsano %d byte\n", data_append);
+        log_trace("vfs_write: Celkem zapsano %d byte (soubor zvetsen o %d byte)\n", data_written, data_append);
 
         // Zvětšení velikosti souboru
         vfs_file->inode_ptr->file_size += data_append;
         // Aktualizace inode ve VFS
         inode_write_to_index(vfs_file->vfs_filename, vfs_file->inode_ptr->id - 1, vfs_file->inode_ptr);
 
+        // Posun offsetu
+        vfs_seek(vfs_file, data_written, SEEK_CUR);
     }
+
+
 
     free(superblock_ptr);
     fclose(file);

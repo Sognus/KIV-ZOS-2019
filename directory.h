@@ -22,19 +22,19 @@ struct directory_entry {
 /**
  * Vytvoří ve VFS novou složku
  *
- * @param vfs_file cesta k VFS souboru
+ * @param vfs_filename cesta k VFS souboru
  * @param path cesta uvnitř VFS
  * @return výsledek operace (return < 0: chyba | return >=0: OK)
  */
-int32_t directory_create(char *vfs_file, char *path);
+int32_t directory_create(char *vfs_filename, char *path);
 
 /**
  * Vypíše obsah složky ve VFS s danou cestou (příkaz LS)
- * @param vfs_file cesta k VFS souboru
+ * @param vfs_filename cesta k VFS souboru
  * @param path cesta uvnitř VFS
  * @return výsledek operace (return < 0: chyba | return >=0: OK)
  */
-int32_t directory_entries_print(char *vfs_file, char *path);
+int32_t directory_entries_print(char *vfs_filename, char *path);
 
 
 #endif //KIV_ZOS_DIRECTORY_H
