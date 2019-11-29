@@ -30,6 +30,21 @@ int main() {
     directory_create(FILENAME, "/");
     directory_entries_print(FILENAME, "/");
 
+    directory_create(FILENAME, "/slozka");
+    directory_entries_print(FILENAME, "/");
+
+    directory_create(FILENAME, "/kkk");
+    directory_entries_print(FILENAME, "/");
+
+
+    printf("\n\n\n");
+
+    directory_create(FILENAME, "/kkk/k1");
+    directory_entries_print(FILENAME, "/kkk/");
+    directory_create(FILENAME, "/kkk/k1/test");
+    directory_entries_print(FILENAME, "/kkk/k1");
+
+
     /*
      * [UVOLNĚNÍ ZDROJŮ
      */

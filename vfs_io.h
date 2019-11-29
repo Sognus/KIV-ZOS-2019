@@ -71,4 +71,16 @@ VFS_FILE *vfs_open_inode(char *vfs_file, int32_t inode_id);
  */
 bool vfs_close(VFS_FILE *file);
 
+/**
+ * Rekurzivně prochází virtuální filesystém a hledá části cesty oddělené znakem /
+ * v případě nalezení souboru v dané cestě vrátí ukazatel na strukturu VFS_FILE,
+ * v případě nenalezení vrátí NULL
+ *
+ * @param vfs_filename cesta k virtuálnímu FS
+ * @param path cesta uvnitř virtuálního FS
+ * @param current_inode_id ID aktuální inode
+ * @return (VFS_FILE * | NULL)
+ */
+VFS_FILE *vfs_open_recursive(char *vfs_filename, char *path, int32_t current_inode_id);
+
 #endif //KIV_ZOS_VFS_IO_H

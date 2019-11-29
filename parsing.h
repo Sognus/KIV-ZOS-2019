@@ -45,4 +45,40 @@ bool file_exist(char *path);
  */
 char *filetype_to_name(int32_t type);
 
+/**
+* Ověří, zda je řetězec prefixem druhého
+*
+* @param prefix prefix
+* @param string ověřovaný řetězec
+* @return ( TRUE | FALSE )
+*/
+bool starts_with(const char *prefix, const char *string);
+
+/**
+ * Vrátí prefix řetězce do určitého znaku
+ *
+ * @param string řetězec
+ * @param delimiter znak
+ * @return char*
+ */
+char *get_prefix_string_until_first_character(char *string, const char *delimiter);
+
+/**
+ * Vrátí suffix řetězce po posledním výskytu určitého znaku
+ *
+ * @param string řetězec
+ * @param delimiter znak
+ * @return char*
+ */
+char *get_suffix_string_after_last_character(char *string, const char *delimiter);
+
+/**
+ * Vrátí prefix řetězce do posledního výskytu určitého znaku
+ *
+ * @param string řetězec
+ * @param delimiter znak
+ * @return char*
+ */
+char *get_prefix_string_until_last_character(char *string, const char *delimiter);
+
 #endif //KIV_ZOS_PARSING_H

@@ -5,6 +5,7 @@
 #include "parsing.h"
 #include "superblock.h"
 #include "bitmap.h"
+#include "directory.h"
 
 
 /**
@@ -599,4 +600,78 @@ bool vfs_close(VFS_FILE *file) {
     free(file);
 
     return TRUE;
+}
+
+/**
+ * Rekurzivně prochází virtuální filesystém a hledá části cesty oddělené znakem /
+ * v případě nalezení souboru v dané cestě vrátí ukazatel na strukturu VFS_FILE,
+ * v případě nenalezení vrátí NULL
+ *
+ * @param vfs_filename cesta k virtuálnímu FS
+ * @param path cesta uvnitř virtuálního FS
+ * @param current_inode_id ID aktuální inode
+ * @return (VFS_FILE * | NULL)
+ */
+VFS_FILE *vfs_open_recursive(char *vfs_filename, char *path, int32_t current_inode_id){
+    // Kontrola délky názvu souboru
+    if (strlen(vfs_filename) < 1) {
+        log_debug("vfs_open_recursive: Cesta k souboru VFS nemuze byt prazdnym retezcem!\n");
+        return NULL;
+    }
+
+    // Ověření existence souboru
+    if (file_exist(vfs_filename) != TRUE) {
+        log_debug("vfs_open_recursive: Soubor VFS %s neexistuje!\n", vfs_filename);
+        return NULL;
+    }
+
+    // Pokud máme INODE=0 a řetězec začíná / tak začneme v root složce
+    if(current_inode_id == 0 && starts_with("/", path)){
+        // Nastaveni INODE na root
+        current_inode_id = 1;
+        // Ořez o první znak
+        path = path + 1;
+
+        log_debug("vfs_open_recursive: Vyuzit predpoklad ID=0 && prefix je / -> root\n");
+    }
+
+    struct inode *inode_ptr = inode_read_by_index(vfs_filename, current_inode_id - 1);
+
+    // Ověření získání struktury inode
+    if(inode_ptr == NULL){
+        log_debug("vfs_open_recursive: Nelze ziskat inode s ID=%d\n", current_inode_id);
+        return NULL;
+    }
+
+    // Pokud je cesta prázdná, pokusíme se o otevření souboru s poslední  inode ID
+    if(strlen(path) < 1 || (strcmp(path, "/") == 0 && current_inode_id != 0)){
+        VFS_FILE *vfs_file = vfs_open_inode(vfs_filename, current_inode_id);
+        free(inode_ptr);
+        return vfs_file;
+    } else {
+        // Pokračujeme rekurzivně, vždy odřízneme řetězec do oddělovacího znaku
+        char *part = get_prefix_string_until_first_character(path, "/");
+
+        // Pokud je aktuální INODE složka, procházíme všechny directory_entry
+        int32_t entry_find_result = directory_has_entry(vfs_filename, current_inode_id, part);
+
+        // Pokud jsme nenašli záznam, smůla
+        if(entry_find_result < 1) {
+            free(inode_ptr);
+            free(part);
+            return NULL;
+        }
+
+        // Posun path o prozkoumanou část
+        path = path + strlen(part);
+
+        // Uvolnění zdrojů
+        free(inode_ptr);
+        free(part);
+
+        // Rekurzivní průchod zbytkem cesty
+        return vfs_open_recursive(vfs_filename, path, entry_find_result);
+    }
+
+
 }

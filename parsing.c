@@ -84,3 +84,106 @@ char *filetype_to_name(int32_t type){
     return NULL;
 }
 
+/**
+ * Ověří, zda je řetězec prefixem druhého
+ *
+ * @param prefix prefix
+ * @param string ověřovaný řetězec
+ * @return ( TRUE | FALSE )
+ */
+bool starts_with(const char *prefix, const char *string)
+{
+    return strncmp(prefix, string, strlen(prefix)) == 0;
+}
+
+/**
+ * Vrátí prefix řetězce do prvního výskytu určitého znaku
+ *
+ * @param string řetězec
+ * @param delimiter znak
+ * @return char*
+ */
+char *get_prefix_string_until_first_character(char *string, const char *delimiter){
+    char *token_ptr;
+
+    // Vytvoření bufferu protože strtok je p**a
+    char *buffer = malloc(sizeof(char)*strlen(string)+1);
+    memset(buffer, 0, strlen(string)+1);
+    strcpy(buffer, string);
+
+    // Získání první části
+    token_ptr = strtok(buffer, "/" );
+
+    // Buffer 2
+    char *buffer2 = malloc(sizeof(char)*strlen(string)+1);
+    memset(buffer2, 0, strlen(string)+1);
+    strcpy(buffer2, token_ptr);
+
+    free(buffer);
+
+    // Návrat první části
+    return buffer2;
+}
+
+/**
+ * Vrátí prefix řetězce do posledního výskytu určitého znaku
+ *
+ * @param string řetězec
+ * @param delimiter znak
+ * @return char*
+ */
+char *get_prefix_string_until_last_character(char *string, const char *delimiter){
+    char *token_ptr;
+
+    // Vytvoření bufferu protože strtok je p**a
+    char *buffer = malloc(sizeof(char)*strlen(string)+1);
+    memset(buffer, 0, strlen(string)+1);
+    strcpy(buffer, string);
+
+    // Získání části za znakem
+    token_ptr = get_suffix_string_after_last_character(string, delimiter);
+    // Místo useknutí
+    int32_t offset = strlen(string) - strlen(token_ptr);
+    int32_t size = strlen(token_ptr);
+    // Useknutí
+    memset(buffer + offset, 0, size);
+    free(token_ptr);
+
+    // Návrat první části
+    return buffer;
+}
+
+/**
+ * Vrátí suffix řetězce po posledním výskytu určitého znaku
+ *
+ * @param string řetězec
+ * @param delimiter znak
+ * @return char*
+ */
+char *get_suffix_string_after_last_character(char *string, const char *delimiter){
+    char *token_ptr;
+    char *prev_token_ptr = NULL;
+
+    // Vytvoření bufferu protože strtok je p**a
+    char *buffer = malloc(sizeof(char)*strlen(string)+1);
+    memset(buffer, 0, strlen(string)+1);
+    strcpy(buffer, string);
+
+    // Získání první části
+    token_ptr = strtok(buffer, "/" );
+
+    /* walk through other tokens */
+    while( token_ptr != NULL ) {
+        prev_token_ptr = token_ptr;
+        token_ptr = strtok(NULL, delimiter);
+    }
+
+    char *buffer2 = malloc(sizeof(char)*strlen(string)+1);
+    memset(buffer2, 0, strlen(string)+1);
+    strcpy(buffer2, prev_token_ptr);
+    free(buffer);
+
+    // Návrat první části
+    return buffer2;
+}
+
