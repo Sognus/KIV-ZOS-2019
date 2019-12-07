@@ -595,8 +595,14 @@ bool vfs_close(VFS_FILE *file) {
         return FALSE;
     }
 
-    free(file->inode_ptr);
-    free(file->vfs_filename);
+    if(file->inode_ptr != NULL){
+        free(file->inode_ptr);
+    }
+
+    if(file->vfs_filename != NULL){
+        free(file->vfs_filename);
+    }
+
     free(file);
 
     return TRUE;

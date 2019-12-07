@@ -2,6 +2,7 @@
 #define KIV_ZOS_DIRECTORY_H
 
 #include <stdint.h>
+#include "vfs_io.h"
 
 /*
  * Struktura DIRECTORY ve VFS
@@ -47,5 +48,14 @@ int32_t directory_entries_print(char *vfs_filename, char *path);
  */
 int32_t directory_has_entry(char *vfs_filename, int32_t inode_id ,char *entry_name);
 
+/**
+ * Přidá záznam directory_entry do souboru
+ *
+ * @param vfs_filename cesta k VFS souboru
+ * @param path cesta uvnitř VFS
+ * @param entry zapisovaný záznam
+ * @return výsledek operace (return < 0: chyba | return >= 0: OK)
+ */
+int32_t directory_add_entry(VFS_FILE *vfs_parrent, struct directory_entry *entry);
 
 #endif //KIV_ZOS_DIRECTORY_H

@@ -102,12 +102,12 @@ int32_t directory_create(char *vfs_filename, char *path){
         parrent_entry->inode_id = inode_free_index + 1;
         strcpy(parrent_entry->name, dir_name);
 
-        // Zapis zaznamu do rodiče
-        VFS_FILE *vfs_parrent = vfs_open_recursive(vfs_filename, path_prefix, 0);
-        vfs_seek(vfs_parrent, 0, SEEK_END);
-        vfs_write(parrent_entry, sizeof(struct directory_entry), 1, vfs_parrent);
+        // TODO: změnit zápis záznamu do rodiče na funkci, projít data složky a hledat volné místo
 
-        if(vfs_parrent == NULL) {
+        VFS_FILE *vfs_parrent = vfs_open_recursive(vfs_filename, path_prefix, 0);
+        int32_t add_result = directory_add_entry(vfs_parrent, parrent_entry);
+
+        if(vfs_parrent == NULL || add_result < 0) {
             free(parrent_entry);
             free(dir_name);
             free(path_prefix);
@@ -332,4 +332,44 @@ int32_t directory_has_entry(char *vfs_filename, int32_t inode_id ,char *entry_na
 
 }
 
+/**
+ * Přidá záznam directory_entry do souboru
+ *
+ * @param vfs_filename cesta k VFS souboru
+ * @param path cesta uvnitř VFS
+ * @param entry zapisovaný záznam
+ * @return výsledek operace (return < 0: chyba | return >= 0: OK)
+ */
+int32_t directory_add_entry(VFS_FILE *vfs_parrent, struct directory_entry *entry){
+    if(vfs_parrent == NULL){
+        log_debug("directory_add_entry: parametr VFS soubor nemuze byt NULL!\n");
+        return -1;
+    }
+
+    struct directory_entry *read_entry = malloc(sizeof(struct directory_entry));
+    int32_t curr = 0;
+    while(curr + sizeof(struct directory_entry) <= vfs_parrent->inode_ptr->file_size){
+        memset(read_entry, 0, sizeof(struct directory_entry));
+        vfs_read(read_entry, sizeof(struct directory_entry), 1, vfs_parrent);
+
+        // Nalezeni retezce
+        if(entry->inode_id == 0) {
+            // Máme prázdný inode
+            break;
+        }
+
+        curr += sizeof(struct directory_entry);
+    }
+
+    // Nastavení ukazatele
+    vfs_seek(vfs_parrent, curr, SEEK_SET);
+    // Zápis záznamu
+    vfs_write(entry, sizeof(struct directory_entry), 1, vfs_parrent);
+
+    // Uvolnění zdrojů
+    free(read_entry);
+
+    // OK
+    return 0;
+}
 
