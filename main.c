@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Spuštění hlavní smyčky
-    while(0){
+    while(1){
         char *line = malloc(sizeof(char) * 256 + 1);
 
         printf("> ");
@@ -87,8 +87,9 @@ int main(int argc, char *argv[]) {
     directory_entries_print(FILENAME, "/kkk/k1/");
 
     printf("\n\n\n");
-    directory_get_path(FILENAME, 5);
-
+    char *path = directory_get_path(FILENAME, 10);
+    printf("PATH ID=5: %s\n", path);
+    free(path);
 
     /*
      * [UVOLNĚNÍ ZDROJŮ

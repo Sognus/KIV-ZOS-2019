@@ -400,8 +400,10 @@ char *directory_get_path(char *vfs_filename, int32_t inode_id) {
         return NULL;
     }
 
-    //char *path = malloc(sizeof(char) * 256 + 1);
-    //memset(path, 0, sizeof(char) * 256 + 1);
+    char *path = malloc(sizeof(char) * 1 + 1);
+    char *old_ptr = NULL;
+    memset(path, 0, sizeof(char) * 1 + 1);
+    strcpy(path, "/");
     int32_t curr_inode = inode_id;
     int32_t prev_inode = inode_id;
 
@@ -435,7 +437,10 @@ char *directory_get_path(char *vfs_filename, int32_t inode_id) {
 
         // Jsme na root složce
         if(prev_inode == curr_inode && prev_inode == 1) {
-            printf("/\n");
+            free(current);
+            free(parent);
+            vfs_close(vfs_file);
+            vfs_close(vfs_parent);
             break;
         }
 
@@ -447,18 +452,26 @@ char *directory_get_path(char *vfs_filename, int32_t inode_id) {
 
 
             // Nalezeni retezce
-            if(entry->inode_id == curr_inode) {
-                printf("%s\n", entry->name);
+            if(entry->inode_id == curr_inode && curr_inode != 1) {
+                old_ptr = path;
+                path = str_prepend(entry->name, path);
+                free(old_ptr);
+                old_ptr = path;
+                path = str_prepend("/", path);
+                free(old_ptr);
             }
 
             // Jsme na root složce
             if(prev_inode == curr_inode && prev_inode == 1) {
-                printf("/\n");
+                old_ptr = path;
+                path = str_prepend("/", path);
+                free(old_ptr);
                 break;
             }
 
             curr += sizeof(struct directory_entry);
         }
+        free(entry);
 
         // Posun dál
         prev_inode = curr_inode;
@@ -467,6 +480,8 @@ char *directory_get_path(char *vfs_filename, int32_t inode_id) {
 
         free(current);
         free(parent);
+        vfs_close(vfs_file);
+        vfs_close(vfs_parent);
 
 
     }
@@ -474,7 +489,7 @@ char *directory_get_path(char *vfs_filename, int32_t inode_id) {
     // Uvolnění zdrojů
     free(inode_ptr);
 
-    return NULL;
+    return path;
 }
 
 

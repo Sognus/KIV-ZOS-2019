@@ -565,7 +565,7 @@ VFS_FILE *vfs_open_inode(char *vfs_file, int32_t inode_id) {
     struct inode *inode_ptr = inode_read_by_index(vfs_file, inode_id - 1);
 
     if (inode_ptr == NULL) {
-        free(vfs_file_open);
+        vfs_close(vfs_file_open);
         free(superblock_ptr);
         log_debug("vfs_open_inode: Nelze precist inode s ID=%d - dana ID neexistuje!\n", inode_id);
         return NULL;

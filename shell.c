@@ -128,6 +128,10 @@ void shell_parse(struct shell *sh, char *command){
         cmd_format(sh, cmd);
     }
 
+    if(strcicmp(token, "pwd\n") == 0) {
+        cmd_pwd(sh);
+    }
+
 
     // Uvolnění zdrojů
     free(cmd);

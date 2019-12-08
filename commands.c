@@ -9,6 +9,21 @@
 #include "directory.h"
 
 /**
+ * Příkaz PWD
+ * @param sh kontext virtuálního terminálu
+ */
+void cmd_pwd(struct shell *sh){
+    if(sh == NULL){
+        log_debug("cmd_pwd: Nelze zpracovat prikaz. Kontext terminalu je NULL!\n");
+        return;
+    }
+
+    char *path = directory_get_path(sh->vfs_filename, sh->cwd);
+    printf("%s\n", path);
+    free(path);
+}
+
+/**
  * Příkaz FORMAT
  *
  * @param sh kontext virtuálního terminálu

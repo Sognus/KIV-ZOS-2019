@@ -304,3 +304,38 @@ int64_t parse_filesize(char *txt){
     return base * multiplicator;
 }
 
+/**
+ * Vytvoří v paměti řetězec spojením předpony a řetězce
+ * Alokuje pamět
+ *
+ * @param prefix předpona
+ * @param string řetězec
+ * @return (char * | NULL)
+ */
+char *str_prepend(char *prefix, char *string){
+    if(string == NULL){
+        return NULL;
+    }
+
+    if(prefix == NULL) {
+        return string;
+    }
+
+    char *pref_copy = malloc(sizeof(char) * strlen(prefix) + 1);
+    char *str_copy = malloc(sizeof(char) * strlen(string) + 1);
+    memset(pref_copy, 0, sizeof(char) * strlen(prefix) + 1);
+    memset(str_copy, 0, sizeof(char) * strlen(string) + 1);
+    strcpy(pref_copy, prefix);
+    strcpy(str_copy, string);
+
+    char *new = malloc(sizeof(char) * strlen(pref_copy) + sizeof(char) * strlen(str_copy) + 1);
+    memset(new, 0, sizeof(char) * strlen(pref_copy) + sizeof(char) * strlen(str_copy) + 1);
+    strcpy(new, prefix);
+    strcat(new, string);
+
+    free(pref_copy);
+    free(str_copy);
+
+    return new;
+}
+

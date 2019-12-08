@@ -97,4 +97,14 @@ int strcicmp(char const *a, char const *b);
  */
 int64_t parse_filesize(char *txt);
 
+/**
+* Vytvoří v paměti řetězec spojením předpony a řetězce
+* Alokuje pamět
+*
+* @param prefix předpona
+* @param string řetězec
+* @return (char * | NULL)
+*/
+char *str_prepend(char *prefix, char *string);
+
 #endif //KIV_ZOS_PARSING_H
