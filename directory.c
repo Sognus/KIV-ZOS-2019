@@ -373,3 +373,108 @@ int32_t directory_add_entry(VFS_FILE *vfs_parrent, struct directory_entry *entry
     return 0;
 }
 
+/**
+ * Od aktuální inode provede přesun přes záznamy rodičů do root složky
+ * a po cestě vytvoří cestu
+ *
+ * @param vfs_filename
+ * @param inode_id
+ * @param entry_name
+ * @return
+ */
+char *directory_get_path(char *vfs_filename, int32_t inode_id) {
+    if(vfs_filename == NULL){
+        log_debug("directory_get_path: Parametr vfs_filename nemuze byt NULL!\n");
+        return NULL;
+    }
+
+    if(strlen(vfs_filename) < 1){
+        log_debug("directory_get_path: Parametr vfs_filename nemuze byt prazdny retezec!\n");
+        return NULL;
+    }
+
+    struct inode *inode_ptr = inode_read_by_index(vfs_filename, inode_id - 1);
+
+    if(inode_ptr == NULL) {
+        log_debug("directory_get_path: Inode neexistuje!\n");
+        return NULL;
+    }
+
+    //char *path = malloc(sizeof(char) * 256 + 1);
+    //memset(path, 0, sizeof(char) * 256 + 1);
+    int32_t curr_inode = inode_id;
+    int32_t prev_inode = inode_id;
+
+    while(1){
+        VFS_FILE *vfs_file = vfs_open_inode(vfs_filename, curr_inode);
+
+        if(vfs_file == NULL){
+            free(inode_ptr);
+            return NULL;
+        }
+
+        struct directory_entry *current = malloc(sizeof(struct directory_entry));
+        struct directory_entry *parent = malloc(sizeof(struct directory_entry));
+        memset(current, 0, sizeof(struct directory_entry));
+        memset(parent, 0, sizeof(struct directory_entry));
+
+        vfs_seek(vfs_file, 0, SEEK_SET);
+        vfs_read(current, sizeof(struct directory_entry), 1, vfs_file);
+        vfs_read(parent, sizeof(struct directory_entry), 1, vfs_file);
+
+        // Otevření rodiče a zjištění jména
+        VFS_FILE *vfs_parent = vfs_open_inode(vfs_filename, parent->inode_id);
+
+        if(vfs_parent == NULL){
+            free(current);
+            free(parent);
+            vfs_close(vfs_file);
+            free(inode_ptr);
+            return NULL;
+        }
+
+        // Jsme na root složce
+        if(prev_inode == curr_inode && prev_inode == 1) {
+            printf("/\n");
+            break;
+        }
+
+        struct directory_entry *entry = malloc(sizeof(struct directory_entry));
+        int32_t curr = 0;
+        while(curr + sizeof(struct directory_entry) <= vfs_parent->inode_ptr->file_size){
+            memset(entry, 0, sizeof(struct directory_entry));
+            vfs_read(entry, sizeof(struct directory_entry), 1, vfs_parent);
+
+
+            // Nalezeni retezce
+            if(entry->inode_id == curr_inode) {
+                printf("%s\n", entry->name);
+            }
+
+            // Jsme na root složce
+            if(prev_inode == curr_inode && prev_inode == 1) {
+                printf("/\n");
+                break;
+            }
+
+            curr += sizeof(struct directory_entry);
+        }
+
+        // Posun dál
+        prev_inode = curr_inode;
+        curr_inode = parent->inode_id;
+
+
+        free(current);
+        free(parent);
+
+
+    }
+
+    // Uvolnění zdrojů
+    free(inode_ptr);
+
+    return NULL;
+}
+
+

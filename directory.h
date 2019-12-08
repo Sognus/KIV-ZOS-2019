@@ -58,4 +58,16 @@ int32_t directory_has_entry(char *vfs_filename, int32_t inode_id ,char *entry_na
  */
 int32_t directory_add_entry(VFS_FILE *vfs_parrent, struct directory_entry *entry);
 
+
+/**
+ * Od aktuální inode provede přesun přes záznamy rodičů do root složky
+ * a po cestě vytvoří cestu
+ *
+ * @param vfs_filename
+ * @param inode_id
+ * @param entry_name
+ * @return
+ */
+char *directory_get_path(char *vfs_filename, int32_t inode_id);
+
 #endif //KIV_ZOS_DIRECTORY_H

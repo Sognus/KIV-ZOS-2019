@@ -669,7 +669,7 @@ VFS_FILE *vfs_open_recursive(char *vfs_filename, char *path, int32_t current_ino
         }
 
         // Posun path o prozkoumanou část
-        path = path + strlen(part);
+        path = path + strlen(part) + 1;
 
         // Uvolnění zdrojů
         free(inode_ptr);

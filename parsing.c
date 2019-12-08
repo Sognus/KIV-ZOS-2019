@@ -1,6 +1,9 @@
 #include "parsing.h"
 #include <stdlib.h>
 #include "structure.h"
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 
 /**
  * Zkontroluje zda je možné umocnit číslo 2 tak, abychom
@@ -185,5 +188,119 @@ char *get_suffix_string_after_last_character(char *string, const char *delimiter
 
     // Návrat první části
     return buffer2;
+}
+
+/**
+ * Porovná dva řetězce, ignoruje velká a malá písmena
+ *
+ * @param a první řetězec
+ * @param b druhá řetězec
+ * @return výsledek porovnání
+ */
+int strcicmp(char const *a, char const *b)
+{
+    for (;; a++, b++) {
+        int d = tolower((unsigned char)*a) - tolower((unsigned char)*b);
+        if (d != 0 || !*a) {
+            return d;
+        }
+    }
+}
+
+/**
+ * Zpracuje řetězec ve tvaru <VELIKOST><JEDNOTKA>
+ *
+ * @param txt
+ */
+int64_t parse_filesize(char *txt){
+    if(txt == NULL){
+        log_debug("parse_filesize: Zpracovavany retezec nesmi byt NULL!\n");
+        return -1;
+    }
+
+    if(strlen(txt) < 1) {
+        log_debug("parse_filesize: Zpracovavany retezec nesmi byt prazdny!\n");
+        return -2;
+    }
+
+    char *curr = txt;
+    int32_t size = 0;
+
+    // Zjištění prvního nečíselného znaku
+    while(*curr != '\0'){
+        if(isdigit(*curr) == FALSE){
+            break;
+        }
+        size = size + 1;
+        curr = curr + sizeof(char);
+    }
+
+    // Alokace paměti pro rětězec
+    char *unit_str = malloc(sizeof(char) * strlen(txt) + 1);
+    char *size_str = malloc(sizeof(char) * strlen(txt) + 1);
+    memset(unit_str, 0, sizeof(char) * strlen(txt) + 1);
+    memset(size_str, 0, sizeof(char) * strlen(txt) + 1);
+
+    // Kopírování řetězce jednotky do řetězce
+    strcpy(unit_str, curr);
+    unit_str[strlen(unit_str)-1] = '\0';
+    // Úprava původního řetězce před kopírováním velikosti
+    txt[size] = '\0';
+    // Kopírování řetězce velikosti
+    strcpy(size_str, txt);
+
+    int64_t base = 0;
+    int64_t multiplicator = 0;
+
+    char *endptr;
+    errno = 0;
+    int64_t result = strtol(size_str, &endptr, 10);
+    bool failed = FALSE;
+    if (endptr == size_str)
+    {
+        failed = TRUE;
+    }
+    if ((result == LONG_MAX || result == LONG_MIN) && errno == ERANGE)
+    {
+       failed = TRUE;
+    }
+
+    if(failed == FALSE){
+        base = result;
+    }
+
+    printf("SSS: %s\n", unit_str);
+
+    // Vstup je počet byte
+    if(strcicmp(unit_str, "B") == 0){
+        multiplicator = pow(1024, 0);
+    }
+
+    // Vstup je počet kB
+    if(strcicmp(unit_str, "kB") == 0){
+        multiplicator = pow(1024, 1);
+    }
+
+    // Vstup je počet MB
+    if(strcicmp(unit_str, "MB") == 0){
+        multiplicator = pow(1024, 2);
+    }
+
+    // Vstup je počet TB
+    if(strcicmp(unit_str, "GB") == 0){
+        multiplicator = pow(1024, 3);
+    }
+
+    // Vstup je počet TB
+    if(strcicmp(unit_str, "TB") == 0){
+        multiplicator = pow(1024, 4);
+    }
+
+    // Uvolnění zdrojů
+    free(unit_str);
+    free(size_str);
+
+    // Vrať výsledný počet v byte
+    return base * multiplicator;
 }
 

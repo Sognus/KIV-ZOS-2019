@@ -81,4 +81,20 @@ char *get_suffix_string_after_last_character(char *string, const char *delimiter
  */
 char *get_prefix_string_until_last_character(char *string, const char *delimiter);
 
+/**
+ * Porovná dva řetězce, ignoruje velká a malá písmena
+ *
+ * @param a první řetězec
+ * @param b druhá řetězec
+ * @return výsledek porovnání
+ */
+int strcicmp(char const *a, char const *b);
+
+/**
+ * Zpracuje řetězec ve tvaru <VELIKOST><JEDNOTKA>
+ *
+ * @param txt
+ */
+int64_t parse_filesize(char *txt);
+
 #endif //KIV_ZOS_PARSING_H
