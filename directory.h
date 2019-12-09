@@ -70,4 +70,23 @@ int32_t directory_add_entry(VFS_FILE *vfs_parrent, struct directory_entry *entry
  */
 char *directory_get_path(char *vfs_filename, int32_t inode_id);
 
+/**
+ * Zjistí inode rodičovské složky
+ *
+ * @param vfs_filename soubor VFS
+ * @param inode_id aktuální složka k získání rodiče
+ * @return (return < 1: ERR | return > 0: ID)
+ */
+int32_t directory_get_parent_id(char *vfs_filename, int32_t inode_id);
+
+/**
+ * Při nalezení záznamu ve složce vrátí záznam, v opačném případě vrátí NULL
+ *
+ * @param vfs_filename cesta k VFS souboru
+ * @param inode_id aktualně prohledávaná složka (její inode ID(
+ * @param entry_name hledané jméno
+ * @return výsledek operace (struct directory_entry * | NULL)
+ */
+struct directory_entry *directory_get_entry(char *vfs_filename, int32_t inode_id ,char *entry_name);
+
 #endif //KIV_ZOS_DIRECTORY_H

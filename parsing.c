@@ -4,6 +4,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+#include "shell.h"
+#include "directory.h"
 
 /**
  * Zkontroluje zda je možné umocnit číslo 2 tak, abychom
@@ -337,5 +339,92 @@ char *str_prepend(char *prefix, char *string){
     free(str_copy);
 
     return new;
+}
+
+/**
+ * Zpracuje vstupní řetězec na absolutní cestu
+ *
+ * @param sh kontext terminálu
+ * @param parsing zpracovávaný řetězec
+ * @return (char *cesta | NULL)
+ */
+char *path_parse_absolute(struct shell *sh, const char *parsing){
+    // Pokud je kontext terminalu NULL, nemuzeme pokracovat
+    if(sh == NULL){
+        log_debug("path_parse_absolute: Kontext terminalu nemuze byt NULL!\n");
+        return NULL;
+    }
+
+    // Pokud je cesta NULL, nelze vratit
+    if(parsing == NULL){
+        log_debug("path_parse_absolute: Zpracovavany retezec nemuze byt NULL!\n");
+        return NULL;
+    }
+
+    // Prazdny retezec nelze zpracovat
+    if(strlen(parsing) < 1){
+        log_debug("path_parse_absolute: Zpracovavany retezec nemuze byt prazdnym retezcem!\n");
+        return NULL;
+    }
+
+    char *buffer = malloc(sizeof(char) * strlen(parsing) + 1);
+    memset(buffer, 0, sizeof(char) * strlen(parsing) + 1);
+    strcpy(buffer, parsing);
+
+    // Pokud řetězec začíná / jedná se o absolutní cestu
+    if(starts_with("/", buffer)){
+        log_trace("path_parse_absolute: Detekovana absolutni cesta\n");
+    }else { // Relativní cesta od shell->cwd
+        log_trace("path_parse_absolute: Detekovana relativni cesta\n");
+
+        char *part_ptr = buffer;
+        char *part = NULL;
+
+        // Kopie shellu - abychom nezměnili aktuální CWD při parsování
+        struct shell *sh_copy = malloc(sizeof(struct shell));
+        memset(sh_copy, 0, sizeof(struct shell));
+        memcpy(sh_copy, sh, sizeof(struct shell));
+
+        while(1){
+            if((part_ptr - (strlen(buffer)+1)) == buffer){
+                break;
+            }
+
+            part = get_prefix_string_until_first_character(part_ptr, "/");
+            part_ptr += strlen(part) +1;
+
+            // Není speciální případ
+            if(strcmp(part, "..") != 0 && strcmp(part, ".") != 0){
+                struct directory_entry *entry = directory_get_entry(sh_copy->vfs_filename, sh_copy->cwd, part);
+
+                // Část cesty nenalezena
+                if(entry == NULL){
+                    log_trace("path_parse_absolute: Cast cesty nenalezena: %s z ID=%d\n", sh_copy->cwd, part);
+                    free(buffer);
+                    return NULL;
+                }
+                sh_copy->cwd = entry->inode_id;
+                free(entry);
+            }
+            else{ // Speciální případ, přeskočit .
+                if(strcmp(part, "..") == 0){
+                    // Změna CWD kopie kontextu na rodičovskou složku
+                    sh_copy->cwd = directory_get_parent_id(sh_copy->vfs_filename, sh_copy->cwd);
+                }
+            }
+
+            free(part);
+            part = NULL;
+        }
+
+        // Vrátit absolutní cestu dle inode
+        char *rtn = directory_get_path(sh_copy->vfs_filename, sh_copy->cwd);
+        free(sh_copy);
+        free(buffer);
+        return rtn;
+
+    }
+
+    return NULL;
 }
 

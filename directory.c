@@ -492,4 +492,138 @@ char *directory_get_path(char *vfs_filename, int32_t inode_id) {
     return path;
 }
 
+/**
+ * Zjistí inode rodičovské složky
+ *
+ * @param vfs_filename soubor VFS
+ * @param inode_id aktuální složka k získání rodiče
+ * @return (return < 1: ERR | return > 0: ID)
+ */
+int32_t directory_get_parent_id(char *vfs_filename, int32_t inode_id){
+    if(vfs_filename == NULL){
+        log_debug("directory_get_parent_id(: Parametr vfs_filename nemuze byt NULL!\n");
+        return -1;
+    }
+
+    if(strlen(vfs_filename) < 1){
+        log_debug("directory_get_parent_id(: Parametr vfs_filename nemuze byt prazdny retezec!\n");
+        return -2;
+    }
+
+    // Pokus o otevření souboru
+    VFS_FILE *vfs_file = vfs_open_inode(vfs_filename, inode_id);
+
+    // Nepodařilo se otevřít INODE - pravděpodobně neexistuje
+    if(vfs_file == NULL){
+        return -3;
+    }
+
+    // TODO: symlink
+    // Soubor není složka
+    if(vfs_file->inode_ptr->type != VFS_DIRECTORY){
+        vfs_close(vfs_file);
+        return -4;
+    }
+
+    // Nastavení offsetu na 2. položku ve složce (1. je current ID)
+    vfs_seek(vfs_file, 0 + sizeof(struct directory_entry), SEEK_SET);
+
+    struct directory_entry *entry = malloc(sizeof(struct directory_entry));
+    memset(entry, 0, sizeof(struct directory_entry));
+    vfs_read(entry, sizeof(struct directory_entry), 1, vfs_file);
+
+    int32_t entry_id = entry->inode_id;
+
+    // Uvolnění zdrojů
+    vfs_close(vfs_file);
+    free(entry);
+
+    // Návrat hodnoty
+    return entry_id;
+}
+
+/**
+ * Při nalezení záznamu ve složce vrátí záznam, v opačném případě vrátí NULL
+ *
+ * @param vfs_filename cesta k VFS souboru
+ * @param inode_id aktualně prohledávaná složka (její inode ID(
+ * @param entry_name hledané jméno
+ * @return výsledek operace (struct directory_entry * | NULL)
+ */
+struct directory_entry *directory_get_entry(char *vfs_filename, int32_t inode_id ,char *entry_name){
+    // Ověřování NULL
+    if(vfs_filename == NULL){
+        log_debug("directory_get_entry: Argument vfs_filename nemuze byt NULL!\n");
+        return NULL;
+    }
+
+    // Kontrola délky názvu souboru
+    if(strlen(vfs_filename) < 1){
+        log_debug("directory_get_entry: Argument vfs_filename nemuze byt prazdnym retezcem!\n");
+        return NULL;
+    }
+
+    if(inode_id < 1){
+        log_debug("directory_get_entry: Soubor s INODE ID=%d nemuze existovat!\n", inode_id);
+        return NULL;
+    }
+
+    if(entry_name == NULL){
+        log_debug("directory_get_entry: Argument entry_name nemuze byt NULL!\n");
+        return NULL;
+    }
+
+    if(strlen(entry_name) < 1) {
+        log_debug("directory_get_entry: Argument entry_name nemuze byt prazdnym retezcem!\n");
+        return NULL;
+    }
+
+    // Ziskani INODE podle ID
+    struct inode *inode_ptr = inode_read_by_index(vfs_filename, inode_id - 1);
+
+    // Ověření ziskani ukazatele na inode
+    if(inode_ptr == NULL){
+        log_debug("directory_get_entry: Nelze ziskat ukazatel pro INODE ID=%d!\n", inode_id);
+        return NULL;
+    }
+
+    // Pokud jde o soubor nelze číst
+    if(inode_ptr->type == VFS_FILE_TYPE){
+        free(inode_ptr);
+        log_debug("directory_get_entry: Ocekavana slozka, INODE ID=%d je soubor!\n", inode_id);
+        return -7;
+    }
+
+    // Pokud máme symlink, potřebujeme dereferencovat a ověřit, zda ukazuje na složku
+    // TODO: symlinkovaná složka
+
+    // Můžeme číst složku - otevřeme
+    VFS_FILE *vfs_file = vfs_open_inode(vfs_filename, inode_id);
+    // Nastavíme offset na začátek
+    vfs_seek(vfs_file, 0, SEEK_SET);
+
+    struct directory_entry *entry = malloc(sizeof(struct directory_entry));
+    int32_t curr = 0;
+    while(curr + sizeof(struct directory_entry) <= vfs_file->inode_ptr->file_size){
+        memset(entry, 0, sizeof(struct directory_entry));
+        vfs_read(entry, sizeof(struct directory_entry), 1, vfs_file);
+
+        // Nalezeni retezce
+        if(strcmp(entry->name, entry_name) == 0) {
+            free(inode_ptr);
+            vfs_close(vfs_file);
+            return entry;
+        }
+
+        curr += sizeof(struct directory_entry);
+    }
+
+    // Nepodařilo se nalézt entry s daným jménem;
+    vfs_close(vfs_file);
+    free(inode_ptr);
+    free(entry);
+    return NULL;
+
+}
+
 

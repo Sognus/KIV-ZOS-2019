@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Spuštění hlavní smyčky
-    while(1){
+    while(0){
         char *line = malloc(sizeof(char) * 256 + 1);
 
         printf("> ");
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
         free(line);
     }
 
-    shell_free(sh);
+
 
 
 
@@ -91,8 +91,23 @@ int main(int argc, char *argv[]) {
     printf("PATH ID=5: %s\n", path);
     free(path);
 
+    sh->cwd = 4;
+    char *t = path_parse_absolute(sh, "test");
+    if(t != NULL){
+        printf("absolute: %s\n",t);
+        free(t);
+    }
+
+    t = path_parse_absolute(sh, ".");
+    if(t != NULL){
+        printf("absolute: %s\n",t);
+        free(t);
+    }
+
+
     /*
      * [UVOLNĚNÍ ZDROJŮ
      */
     free(ptr);
+    shell_free(sh);
 }

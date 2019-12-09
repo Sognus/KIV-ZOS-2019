@@ -7,6 +7,7 @@
 #include <string.h>
 #include "bool.h"
 #include "debug.h"
+#include "shell.h"
 
 
 /*
@@ -106,5 +107,14 @@ int64_t parse_filesize(char *txt);
 * @return (char * | NULL)
 */
 char *str_prepend(char *prefix, char *string);
+
+/**
+ * Zpracuje vstupní řetězec na absolutní cestu
+ *
+ * @param sh kontext terminálu
+ * @param parsing zpracovávaný řetězec
+ * @return (char *cesta | NULL)
+ */
+char *path_parse_absolute(struct shell *sh, const char *parsing);
 
 #endif //KIV_ZOS_PARSING_H
