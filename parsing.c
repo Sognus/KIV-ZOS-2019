@@ -271,8 +271,6 @@ int64_t parse_filesize(char *txt){
         base = result;
     }
 
-    printf("SSS: %s\n", unit_str);
-
     // Vstup je počet byte
     if(strcicmp(unit_str, "B") == 0){
         multiplicator = pow(1024, 0);
@@ -343,6 +341,7 @@ char *str_prepend(char *prefix, char *string){
 
 /**
  * Zpracuje vstupní řetězec na absolutní cestu
+ * PRO EXISTUJÍCÍ CESTY
  *
  * @param sh kontext terminálu
  * @param parsing zpracovávaný řetězec
@@ -371,14 +370,20 @@ char *path_parse_absolute(struct shell *sh, const char *parsing){
     memset(buffer, 0, sizeof(char) * strlen(parsing) + 1);
     strcpy(buffer, parsing);
 
+    // Ořez řetězce pokud poslední znak je \n
+    if(buffer[strlen(buffer)-1] == '\n'){
+        buffer[strlen(buffer)-1] = '\0';
+    }
+
+    char *part_ptr = buffer;
+    char *part = NULL;
+
     // Pokud řetězec začíná / jedná se o absolutní cestu
     if(starts_with("/", buffer)){
         log_trace("path_parse_absolute: Detekovana absolutni cesta\n");
+        return buffer;
     }else { // Relativní cesta od shell->cwd
         log_trace("path_parse_absolute: Detekovana relativni cesta\n");
-
-        char *part_ptr = buffer;
-        char *part = NULL;
 
         // Kopie shellu - abychom nezměnili aktuální CWD při parsování
         struct shell *sh_copy = malloc(sizeof(struct shell));
@@ -401,10 +406,13 @@ char *path_parse_absolute(struct shell *sh, const char *parsing){
                 if(entry == NULL){
                     log_trace("path_parse_absolute: Cast cesty nenalezena: %s z ID=%d\n", sh_copy->cwd, part);
                     free(buffer);
+                    free(part);
+                    free(sh_copy);
                     return NULL;
                 }
                 sh_copy->cwd = entry->inode_id;
                 free(entry);
+
             }
             else{ // Speciální případ, přeskočit .
                 if(strcmp(part, "..") == 0){

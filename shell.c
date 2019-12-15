@@ -124,12 +124,48 @@ void shell_parse(struct shell *sh, char *command){
     char *token = NULL;
     token = strtok(command, " ");
 
+    if(strcicmp(token, "format\n") == 0){
+        printf("format: Required parameter is missing!\n");
+    }
+
+    // Příkaz -> formátování VFS
     if(strcicmp(token, "format") == 0){
         cmd_format(sh, cmd);
     }
 
+    // Příkaz -> výpis aktuální cesty
     if(strcicmp(token, "pwd\n") == 0) {
         cmd_pwd(sh);
+    }
+
+    // Příkaz -> změna adresáře -> chybějící parametry
+    if(strcicmp(token, "cd\n") == 0){
+        printf("cd: Required parameter is missing!\n");
+    }
+
+    // Příkaz -> změna adresáře
+    if(strcicmp(token, "cd") == 0){
+        cmd_cd(sh, cmd);
+    }
+
+    // Příkaz -> vytvoření adresáře -> chybějící parametry
+    if(strcicmp(token, "mkdir\n") == 0){
+        printf("mkdir: Required parameter is missing!\n");
+    }
+
+    // Příkaz -> vytvoření adresáře
+    if(strcicmp(token, "mkdir") == 0){
+        cmd_mkdir(sh, cmd);
+    }
+
+    // Příkaz -> ls -> bez parametrů => ls $cwd
+    if(strcicmp(token, "ls\n") == 0){
+        cmd_ls(sh, NULL);
+    }
+
+    // Příkaz -> ls -> parametrický
+    if(strcicmp(token, "ls") == 0){
+        printf("ls: Not yet implemented!\n");
     }
 
 

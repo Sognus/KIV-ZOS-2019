@@ -106,6 +106,7 @@ int32_t directory_create(char *vfs_filename, char *path){
 
         VFS_FILE *vfs_parrent = vfs_open_recursive(vfs_filename, path_prefix, 0);
         int32_t add_result = directory_add_entry(vfs_parrent, parrent_entry);
+        log_debug("directory_create: Entry add result -> %d\n", add_result);
 
         if(vfs_parrent == NULL || add_result < 0) {
             free(parrent_entry);

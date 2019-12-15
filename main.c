@@ -29,15 +29,17 @@ int main(int argc, char *argv[]) {
     }
 
     // Spuštění hlavní smyčky
-    while(0){
+    while(1){
         char *line = malloc(sizeof(char) * 256 + 1);
+        char *path = directory_get_path(sh->vfs_filename, sh->cwd);
 
-        printf("> ");
+        printf("%s > ", path);
         line = fgets(line, sizeof(char) * 256 + 1, stdin);
 
         // Kontrola ukončení souboru
         if(strcicmp(line, "exit\n") == 0){
             free(line);
+            free(path);
             break;
         }else{
             // Zpracování vstupu
@@ -46,68 +48,8 @@ int main(int argc, char *argv[]) {
 
         // Uvolnění zdrojů
         free(line);
+        free(path);
     }
 
-
-
-
-
-    //const int32_t disk_size = 629145600;                                // 600MB
-    //const int32_t disk_size = 52428800;                                 // 50MB
-    //const int32_t disk_size = 10485760;                                 // 10MB
-    const int32_t  disk_size = 65536;                                     // 64KB
-
-    /*
-     * [TEST VYTVOŘENÍ VFS]
-     */
-
-    struct superblock *ptr = superblock_impl_alloc(disk_size);
-    structure_calculate(ptr);
-    superblock_print(ptr);
-    vfs_create(FILENAME, ptr);
-
-    /*
-     * [TEST VYTVOŘENÍ SLOŽKY]
-     */
-    directory_create(FILENAME, "/");  // 1
-    directory_entries_print(FILENAME, "/");
-
-    directory_create(FILENAME, "/slozka"); // 2
-    directory_entries_print(FILENAME, "/");
-
-    directory_create(FILENAME, "/kkk"); // 3
-    directory_entries_print(FILENAME, "/");
-
-
-    printf("\n\n\n");
-
-    directory_create(FILENAME, "/kkk/k1"); // 4
-    directory_entries_print(FILENAME, "/kkk/");
-    directory_create(FILENAME, "/kkk/k1/test"); // 5
-    directory_entries_print(FILENAME, "/kkk/k1/");
-
-    printf("\n\n\n");
-    char *path = directory_get_path(FILENAME, 10);
-    printf("PATH ID=5: %s\n", path);
-    free(path);
-
-    sh->cwd = 4;
-    char *t = path_parse_absolute(sh, "test");
-    if(t != NULL){
-        printf("absolute: %s\n",t);
-        free(t);
-    }
-
-    t = path_parse_absolute(sh, ".");
-    if(t != NULL){
-        printf("absolute: %s\n",t);
-        free(t);
-    }
-
-
-    /*
-     * [UVOLNĚNÍ ZDROJŮ
-     */
-    free(ptr);
     shell_free(sh);
 }

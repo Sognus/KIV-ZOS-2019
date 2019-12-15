@@ -508,6 +508,7 @@ VFS_FILE *vfs_open(char *vfs_file, char *vfs_path) {
     }
 
     VFS_FILE *vfs_file_open = malloc(sizeof(struct VFS_FILE));
+    memset(vfs_file_open, 0, sizeof(struct VFS_FILE));
 
     if (vfs_file_open == NULL) {
         free(superblock_ptr);
@@ -517,12 +518,18 @@ VFS_FILE *vfs_open(char *vfs_file, char *vfs_path) {
 
     // Otevření root složky
     if (strcmp(vfs_path, "/") == 0) {
-        return vfs_open_inode(vfs_file, 1);
+        VFS_FILE *vfs_opened_inode = vfs_open_inode(vfs_file, 1);
+        free(superblock_ptr);
+        vfs_close(vfs_file_open);
+        return vfs_opened_inode;
     } else {
-        // tODO: implement - open nonroot folders (need vfs_write, vfs_read completed first)
+        VFS_FILE *vfs_recursive = vfs_open_recursive(vfs_file, vfs_path,  1);
+        vfs_close(vfs_file_open);
+        free(superblock_ptr);
+        return vfs_recursive;
     }
 
-    return 0;
+
 }
 
 /**
@@ -632,7 +639,7 @@ VFS_FILE *vfs_open_recursive(char *vfs_filename, char *path, int32_t current_ino
     }
 
     // Pokud máme INODE=0 a řetězec začíná / tak začneme v root složce
-    if(current_inode_id == 0 && starts_with("/", path)){
+    if(current_inode_id == 0 && (starts_with("/", path) || strcmp("", path) == 0)){
         // Nastaveni INODE na root
         current_inode_id = 1;
         // Ořez o první znak
