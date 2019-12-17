@@ -11,12 +11,34 @@
 #include "parsing.h"
 
 #define FILENAME "test.dat"
+#define IMPL_VFS_SIZE 65536
 
 int main(int argc, char *argv[]) {
     // Ověření počtu vstupních parametrů [1] = cesta k VFS
     if(argc < 2){
         log_fatal("Program spusten bez parametru!\n");
         return -1;
+    }
+
+    if(file_exist(argv[1]) == FALSE){
+        FILE *file = fopen(argv[1], "ab+");
+
+        if(file == NULL){
+            log_fatal("Nepodarilo se vytvorit %s!\n", argv[1]);
+            return -10;
+        }
+
+        int64_t size = IMPL_VFS_SIZE;
+        // Vytvoření implicitního superbloku
+        struct superblock *ptr = superblock_impl_alloc(size);
+        // Výpočet hodnot superbloku dle velikosti disku
+        structure_calculate(ptr);
+        // Vytvoření virtuálního FILESYSTEMU
+        vfs_create(argv[1], ptr);
+        // Vytvoření kořenové složky
+        directory_create(argv[1], "/");
+
+        fclose(file);
     }
 
     // Vytvoření kontextu

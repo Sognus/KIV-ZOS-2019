@@ -381,7 +381,29 @@ char *path_parse_absolute(struct shell *sh, const char *parsing){
     // Pokud řetězec začíná / jedná se o absolutní cestu
     if(starts_with("/", buffer)){
         log_trace("path_parse_absolute: Detekovana absolutni cesta\n");
-        return buffer;
+
+        // Zjištění prefix cesty
+        char *path_prefix = get_prefix_string_until_last_character(buffer, "/");
+        // Zjištění suffix cesty - název složky
+        char *dir_name = get_suffix_string_after_last_character(buffer, "/");
+        // Otevření rodičovské složky
+        VFS_FILE *vfs_file = vfs_open_recursive(sh->vfs_filename, path_prefix, 1);
+        char *abs = directory_get_path(sh->vfs_filename, vfs_file->inode_ptr->id);
+
+        char *buff = malloc(sizeof(char) * ((strlen(abs) + strlen(dir_name) + 1)));
+        memset(buff, 0, sizeof(char) * ((strlen(abs) + strlen(dir_name) + 1)));
+        strcpy(buff, abs);
+        char *final = str_prepend(abs, dir_name);
+
+        // Uvolnění zdrojů
+        vfs_close(vfs_file);
+        free(dir_name);
+        free(path_prefix);
+        free(abs);
+        free(buffer);
+        free(buff);
+
+        return final;
     }else { // Relativní cesta od shell->cwd
         log_trace("path_parse_absolute: Detekovana relativni cesta\n");
 

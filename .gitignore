@@ -60,5 +60,8 @@ test.dat
 vfs.dat
 *.log
 
+# Random text files
+*.txt
+
 # Dumps
 vgcore.*

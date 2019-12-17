@@ -123,55 +123,90 @@ void shell_parse(struct shell *sh, char *command){
 
     char *token = NULL;
     token = strtok(command, " ");
+    bool flag_command = FALSE;
 
     if(strcicmp(token, "format\n") == 0){
         printf("format: Required parameter is missing!\n");
+        flag_command = TRUE;
     }
 
     // Příkaz -> formátování VFS
     if(strcicmp(token, "format") == 0){
         cmd_format(sh, cmd);
+        flag_command = TRUE;
     }
 
     // Příkaz -> výpis aktuální cesty
     if(strcicmp(token, "pwd\n") == 0) {
         cmd_pwd(sh);
+        flag_command = TRUE;
     }
 
     // Příkaz -> změna adresáře -> chybějící parametry
     if(strcicmp(token, "cd\n") == 0){
         printf("cd: Required parameter is missing!\n");
+        flag_command = TRUE;
     }
 
     // Příkaz -> změna adresáře
     if(strcicmp(token, "cd") == 0){
         cmd_cd(sh, cmd);
+        flag_command = TRUE;
     }
 
     // Příkaz -> vytvoření adresáře -> chybějící parametry
     if(strcicmp(token, "mkdir\n") == 0){
         printf("mkdir: Required parameter is missing!\n");
+        flag_command = TRUE;
     }
 
     // Příkaz -> vytvoření adresáře
     if(strcicmp(token, "mkdir") == 0){
         cmd_mkdir(sh, cmd);
+        flag_command = TRUE;
     }
 
     // Příkaz -> ls -> bez parametrů => ls $cwd
     if(strcicmp(token, "ls\n") == 0){
         cmd_ls(sh, NULL);
+        flag_command = TRUE;
     }
 
     // Příkaz -> ls -> parametrický
     if(strcicmp(token, "ls") == 0){
-        printf("ls: Not yet implemented!\n");
+        cmd_ls(sh, cmd);
+        flag_command = TRUE;
     }
 
+    // Příkaz -> incp -> bez parametrů
+    if(strcicmp(token, "incp\n") == 0){
+        printf("incp: Required parameters are missing!\n");
+        flag_command = TRUE;
+    }
+
+    // Příkaz -> incp -> nějaké parametry, zpracuje si cmd_incp
+    if(strcicmp(token, "incp") == 0){
+        cmd_incp(sh, cmd);
+        flag_command = TRUE;
+    }
+
+    // Příkaz -> cat -> bez parame
+    if(strcicmp(token, "cat\n") == 0){
+        printf("cat: Required parameters are missing!\n");
+        flag_command = TRUE;
+    }
+
+    // Příkaz -> cat -> bez parame
+    if(strcicmp(token, "cat") == 0){
+        cmd_cat(sh, cmd);
+        flag_command = TRUE;
+    }
+
+    // Vždy poslední - vypsat: Neznámý příkaz
+    if(flag_command == FALSE){
+        printf("Unknown command!\n");
+    }
 
     // Uvolnění zdrojů
     free(cmd);
-
-
-
 }

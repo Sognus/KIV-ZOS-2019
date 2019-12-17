@@ -42,4 +42,21 @@ void cmd_mkdir(struct shell *sh, char *command);
  */
 void cmd_ls(struct shell *sh, char *command);
 
+/**
+ * Příkaz: Nahrání souboru do VFS
+ *
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_incp(struct shell *sh, char *command);
+
+/**
+ * Příkaz: Vypsání obsahu souboru (ne složky)
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_cat(struct shell *sh, char *command);
+
 #endif //KIV_ZOS_COMMANDS_H
