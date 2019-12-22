@@ -69,6 +69,7 @@ bool file_exist(char *path){
  */
 char *filetype_to_name(int32_t type){
     char *filetype = malloc(sizeof(char) * 32);
+    memset(filetype, 0, sizeof(char) * 32);
 
     if(type == VFS_DIRECTORY){
         strcpy(filetype, "+DIRECTORY");
@@ -81,7 +82,35 @@ char *filetype_to_name(int32_t type){
     }
 
     if(type == VFS_SYMLINK) {
-        strcpy(filetype, "*SYMLINK");
+        strcpy(filetype, "->SYMLINK");
+        return filetype;
+    }
+
+    free(filetype);
+    return NULL;
+}
+
+/**
+ * Převede typ souboru z čísla na řetězec
+ * @param type typ souboru
+ * @return ukazatel na řetězec
+ */
+char *filetype_to_short(int32_t type){
+    char *filetype = malloc(sizeof(char) * 32);
+    memset(filetype, 0, sizeof(char) * 32);
+
+    if(type == VFS_DIRECTORY){
+        strcpy(filetype, "+");
+        return filetype;
+    }
+
+    if(type == VFS_FILE_TYPE) {
+        strcpy(filetype, "-");
+        return filetype;
+    }
+
+    if(type == VFS_SYMLINK) {
+        strcpy(filetype, "->");
         return filetype;
     }
 
@@ -382,12 +411,22 @@ char *path_parse_absolute(struct shell *sh, const char *parsing){
     if(starts_with("/", buffer)){
         log_trace("path_parse_absolute: Detekovana absolutni cesta\n");
 
+        // Poslední znak je /
+        if(buffer[strlen(buffer)-1] == '/'){
+            buffer[strlen(buffer)-1] = '\0';
+        }
+
         // Zjištění prefix cesty
         char *path_prefix = get_prefix_string_until_last_character(buffer, "/");
         // Zjištění suffix cesty - název složky
         char *dir_name = get_suffix_string_after_last_character(buffer, "/");
         // Otevření rodičovské složky
-        VFS_FILE *vfs_file = vfs_open_recursive(sh->vfs_filename, path_prefix, 1);
+        VFS_FILE *vfs_file = vfs_open_recursive(sh->vfs_filename, path_prefix, 0);
+
+        if(vfs_file == NULL){
+            return NULL;
+        }
+
         char *abs = directory_get_path(sh->vfs_filename, vfs_file->inode_ptr->id);
 
         char *buff = malloc(sizeof(char) * ((strlen(abs) + strlen(dir_name) + 1)));

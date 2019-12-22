@@ -112,6 +112,12 @@ void cmd_cd(struct shell *sh, char *command) {
         token[strlen(token)-1] = '\0';
     }
 
+    if(strcmp(token, "/") == 0){
+        sh->cwd = 1;
+        return;
+    }
+
+
     char *path_absolute = NULL;
 
     // Převod na absolutní cestu
@@ -281,12 +287,16 @@ void cmd_ls(struct shell *sh, char *command){
             free(cwd);
         }
 
+        printf("path_absolute: %s\n", path_absolute);
+
         // Výpis obsahu složky
         int print_result = directory_entries_print(sh->vfs_filename, path_absolute);
 
         if(print_result < 0){
             printf("PATH NOT FOUND (neexistujici adresar)\n");
         }
+
+        free(path_absolute);
     }
 
 
@@ -516,4 +526,139 @@ void cmd_cat(struct shell *sh, char *command){
     free(path_absolute);
     free(buffer);
     vfs_close(source);
+}
+
+/**
+ * Příkaz: Smazání složky pokud je prázdná
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_rmdir(struct shell *sh, char *command){
+    if(sh == NULL){
+        log_debug("cmd_rmdir: Nelze zpracovat prikaz. Kontext terminalu je NULL!\n");
+        printf("FILE NOT FOUND (neexistujici adresar)\n");
+        return;
+    }
+
+    if(command == NULL){
+        log_debug("cmd_rmdir: Nelze zpracovat prikaz. Prikaz je NULL!\n");
+        printf("FILE NOT FOUND (neexistujici adresar)\n");
+        return;
+    }
+
+    if(strlen(command) < 1){
+        log_debug( "cmd_rmdir: Nelze zpracovat prikaz. Prikaz je prazdnym retezcem!\n");
+        printf("FILE NOT FOUND (neexistujici adresar)\n");
+        return;
+    }
+
+    char *token = NULL;
+    // Jméno příkazu
+    token = strtok(command, " ");
+    // První parametr příkazu
+    token = strtok(NULL, " ");
+
+    // Odstranit \n
+    if(token[strlen(token)-1] == '\n'){
+        token[strlen(token)-1] = '\0';
+    }
+
+    char *path_absolute = NULL;
+
+    // Převod na absolutní cestu
+    if(starts_with("/", token)){
+        path_absolute = path_parse_absolute(sh, token);
+    }else {
+        char *cwd = directory_get_path(sh->vfs_filename, sh->cwd);
+        char *mashed = str_prepend(cwd, token);
+        path_absolute = path_parse_absolute(sh, mashed);
+        free(mashed);
+        free(cwd);
+    }
+
+    // Pokud se nám nepodaří zpracovat retezec, tak ukoncime zpracovani
+    if(path_absolute == NULL){
+        printf("PATH NOT FOUND (neexistujici cesta)\n");
+        return;
+    }
+
+    // Smazat složku
+    int32_t delete_result = directory_delete(sh->vfs_filename, path_absolute);
+
+    if(delete_result < 0){
+        printf("FILE NOT FOUND (neexistujici adresar)\n");
+    }
+
+    if(delete_result == 3){
+        printf("NOT EMPTY (adresar obsahuje podadresare, nebo soubory)\n");
+    }
+
+    if(delete_result == 0){
+        printf("OK\n");
+    }
+
+    // Uvolnění zdrojů
+    free(path_absolute);
+}
+
+/**
+ *
+ * Příkaz: smazání souboru
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_rm(struct shell *sh, char *command){
+    if(sh == NULL){
+        log_debug("cmd_rm: Nelze zpracovat prikaz. Kontext terminalu je NULL!\n");
+        printf("FILE NOT FOUND\n");
+        return;
+    }
+
+    if(command == NULL){
+        log_debug("cmd_rm: Nelze zpracovat prikaz. Prikaz je NULL!\n");
+        printf("FILE NOT FOUND\n");
+        return;
+    }
+
+    if(strlen(command) < 1){
+        log_debug( "cmd_rm: Nelze zpracovat prikaz. Prikaz je prazdnym retezcem!\n");
+        printf("FILE NOT FOUND\n");
+        return;
+    }
+
+    char *token = NULL;
+    // Jméno příkazu
+    token = strtok(command, " ");
+    // První parametr příkazu
+    token = strtok(NULL, " ");
+
+    // Odstranit \n
+    if(token[strlen(token)-1] == '\n'){
+        token[strlen(token)-1] = '\0';
+    }
+
+    char *path_absolute = NULL;
+
+    // Převod na absolutní cestu
+    if(starts_with("/", token)){
+        path_absolute = path_parse_absolute(sh, token);
+    }else {
+        char *cwd = directory_get_path(sh->vfs_filename, sh->cwd);
+        char *mashed = str_prepend(cwd, token);
+        path_absolute = path_parse_absolute(sh, mashed);
+        free(mashed);
+        free(cwd);
+    }
+
+    int32_t result = file_delete(sh->vfs_filename, path_absolute);
+
+    if(result == 0){
+        printf("OK\n");
+    } else{
+        printf("FILE NOT FOUND\n");
+    }
+
+    free(path_absolute);
 }

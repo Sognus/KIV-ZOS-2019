@@ -214,3 +214,143 @@ bool allocation_clear_cluster(char *filename, int32_t address){
     free(superblock_ptr);
     return TRUE;
 }
+
+/**
+ * Dealokuje všechny alokované databloky v INODE
+ *
+ * @param filename soubor vfs
+ * @param inode_ptr ukazatel na strukturu inode
+ * @return výsledek operace
+ */
+int32_t deallocate(char *filename, struct inode *inode_ptr){
+    // Kontrola délky názvu souboru
+    if(strlen(filename) < 1){
+        log_debug("deallocate: Nelze pouzit prazdne jmeno souboru!\n");
+        return -1;
+    }
+
+    // Ověření existence souboru
+    if(file_exist(filename) != TRUE){
+        log_debug("deallocate: Zadany soubor neexistuje!\n");
+        return -2;
+    }
+
+    // Ověření ukazatele na INODe
+    if(inode_ptr == NULL){
+        log_debug("deallocate: Ukazatel na inode nesmi byt NULL!\n");
+        return -3;
+    }
+
+    struct superblock *superblock_ptr = superblock_from_file(filename);
+
+    if(superblock_ptr == NULL){
+        log_debug("deallocate: Nepodarilo se precist superblock!\n");
+        return -4;
+    }
+
+    /*
+     * 0 - 4: directX+1
+     * 5 - 1028: indirect1[X-5]
+     * 1029 - END: indirect2[(X-1028)/1024][(X-1030)%1024]
+     */
+    for(int i = 0; i < inode_ptr->allocated_clusters; i++){
+        int32_t *address = malloc(sizeof(int32_t));
+
+        if(i == 0){
+            *address = inode_ptr->direct1;
+        }
+
+        if(i == 1){
+            *address = inode_ptr->direct2;
+        }
+
+        if(i == 2){
+            *address = inode_ptr->direct3;
+        }
+
+        if(i == 3){
+            *address = inode_ptr->direct4;
+        }
+
+        if(i == 4){
+            *address = inode_ptr->direct5;
+        }
+
+        if(inode_ptr->indirect1 != 0 && i > 4 && i < 1029){
+            int32_t indirect1_index = inode_ptr->allocated_clusters - 5;
+            int32_t indirect1_address = inode_ptr->indirect1 + (indirect1_index * sizeof(int32_t));
+
+            // Přečtení adresy
+            FILE * file = fopen(filename, "r+b");
+            fseek(file, indirect1_address, SEEK_SET);
+            fread(address, sizeof(int32_t), 1, file);
+
+            fclose(file);
+        }
+
+        if(inode_ptr->indirect2 != 0 && i > 1028){
+            int32_t indirect2_level1_index = (int32_t)floor(((double)(inode_ptr->allocated_clusters-1029))/1024);
+            int32_t indirect2_level2_index = (inode_ptr->allocated_clusters - 1029) % 1024;
+
+            // Získání adresy ukazatele na datablok - úroven 1
+            int32_t indirect2_level1_address = inode_ptr->indirect2 + (indirect2_level1_index * sizeof(int32_t));
+            int32_t *indirect2_level2_base = malloc(sizeof(int32_t));
+
+            // Přečtení level 2 adresy
+            FILE *file = fopen(filename, "r+b");
+            fseek(file, indirect2_level1_address, SEEK_SET);
+            fread(indirect2_level2_base, sizeof(int32_t), 1, file);
+
+            // Výpočet level 2 adressy
+            *address = *indirect2_level2_base + (indirect2_level2_index * sizeof(int32_t));
+
+            free(indirect2_level2_base);
+        }
+
+        // Smazání nalezené adresy
+        if(address != 0){
+
+            int32_t index = 0;
+            int32_t current = superblock_ptr->data_start_address;
+
+            // Zjištění indexu
+            while(current != *address){
+                index = index + 1;
+                current = current + superblock_ptr->cluster_size;
+            }
+
+            bitmap_set(filename, index, 1, FALSE);
+        }
+
+        free(address);
+    }
+
+    // Dealokace indirect1
+    if(inode_ptr->indirect1 != 0) {
+        int32_t current = superblock_ptr->data_start_address;
+        int32_t index = 0;
+        while(current != inode_ptr->indirect1){
+            index = index + 1;
+            current = current + superblock_ptr->cluster_size;
+        }
+
+        bitmap_set(filename, index, 1, FALSE);
+    }
+
+    // Dealokace indirect2
+    if(inode_ptr->indirect2 != 0) {
+        int32_t current = superblock_ptr->data_start_address;
+        int32_t index = 0;
+        while(current != inode_ptr->indirect2){
+            index = index + 1;
+            current = current + superblock_ptr->cluster_size;
+        }
+
+        bitmap_set(filename, index, 1, FALSE);
+    }
+
+    free(superblock_ptr);
+
+    // OK
+    return 0;
+}

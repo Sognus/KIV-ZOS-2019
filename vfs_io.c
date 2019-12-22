@@ -381,7 +381,9 @@ size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, 
         log_trace("vfs_write: Celkem zapsano %d byte (soubor zvetsen o %d byte)\n", data_written, data_append);
 
         // Zvětšení velikosti souboru
-        vfs_file->inode_ptr->file_size += data_append;
+        if(data_append > 0){
+            vfs_file->inode_ptr->file_size += data_append;
+        }
         // Aktualizace inode ve VFS
         inode_write_to_index(vfs_file->vfs_filename, vfs_file->inode_ptr->id - 1, vfs_file->inode_ptr);
         // Posun offsetu
@@ -461,7 +463,9 @@ size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, 
         log_trace("vfs_write: Celkem zapsano %d byte (soubor zvetsen o %d byte)\n", data_written, data_append);
 
         // Zvětšení velikosti souboru
-        vfs_file->inode_ptr->file_size += data_append;
+        if(data_append > 0){
+            vfs_file->inode_ptr->file_size += data_append;
+        }
         // Aktualizace inode ve VFS
         inode_write_to_index(vfs_file->vfs_filename, vfs_file->inode_ptr->id - 1, vfs_file->inode_ptr);
 
@@ -523,7 +527,7 @@ VFS_FILE *vfs_open(char *vfs_file, char *vfs_path) {
         vfs_close(vfs_file_open);
         return vfs_opened_inode;
     } else {
-        VFS_FILE *vfs_recursive = vfs_open_recursive(vfs_file, vfs_path,  1);
+        VFS_FILE *vfs_recursive = vfs_open_recursive(vfs_file, vfs_path,  0);
         vfs_close(vfs_file_open);
         free(superblock_ptr);
         return vfs_recursive;
@@ -572,7 +576,7 @@ VFS_FILE *vfs_open_inode(char *vfs_file, int32_t inode_id) {
     struct inode *inode_ptr = inode_read_by_index(vfs_file, inode_id - 1);
 
     if (inode_ptr == NULL) {
-        vfs_close(vfs_file_open);
+        free(vfs_file_open);
         free(superblock_ptr);
         log_debug("vfs_open_inode: Nelze precist inode s ID=%d - dana ID neexistuje!\n", inode_id);
         return NULL;
@@ -656,6 +660,7 @@ VFS_FILE *vfs_open_recursive(char *vfs_filename, char *path, int32_t current_ino
         return NULL;
     }
 
+
     // Pokud je cesta prázdná, pokusíme se o otevření souboru s poslední  inode ID
     if(strlen(path) < 1 || (strcmp(path, "/") == 0 && current_inode_id != 0)){
         VFS_FILE *vfs_file = vfs_open_inode(vfs_filename, current_inode_id);
@@ -676,7 +681,12 @@ VFS_FILE *vfs_open_recursive(char *vfs_filename, char *path, int32_t current_ino
         }
 
         // Posun path o prozkoumanou část
-        path = path + strlen(part) + 1;
+        path = path + strlen(part);
+
+        // Usekneme další byte pokud máme /
+        if(*path == '/'){
+            path = path + 1;
+        }
 
         // Uvolnění zdrojů
         free(inode_ptr);

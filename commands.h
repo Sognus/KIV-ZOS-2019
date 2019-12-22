@@ -59,4 +59,22 @@ void cmd_incp(struct shell *sh, char *command);
  */
 void cmd_cat(struct shell *sh, char *command);
 
+/**
+ * Příkaz: Smazání složky pokud je prázdná
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_rmdir(struct shell *sh, char *command);
+
+/**
+ *
+ * Příkaz: smazání souboru
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_rm(struct shell *sh, char *command);
+
+
 #endif //KIV_ZOS_COMMANDS_H

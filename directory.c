@@ -230,12 +230,31 @@ int32_t directory_entries_print(char *vfs_filename, char *path){
         memset(entry, 0, sizeof(struct directory_entry));
         vfs_read(entry, sizeof(struct directory_entry), 1, vfs_file);
 
-        // Výpis
-        printf("%s\t%d\n", entry->name, entry->inode_id);
+
+        if(strcmp(entry->name, "..") == 0 || strcmp(entry->name, ".") == 0){
+            // Výpis
+            printf("%s\t%d\n", entry->name, entry->inode_id);
+        }
+        else {
+            // Char type
+            VFS_FILE *entry_file = vfs_open_inode(vfs_filename, entry->inode_id);
+
+            if(entry_file != NULL){
+                char *type = filetype_to_short(entry_file->inode_ptr->type);
+
+                // Výpis
+                printf("%s%s\t%d\n", type, entry->name, entry->inode_id);
+
+
+                // Uvolnění zdrojů
+                vfs_close(entry_file);
+                free(type);
+            }
+
+        }
 
         // Posun na další prvek - vlastně jen pro podmínku, SEEK se upravuje v VFS_READ
         current += sizeof(struct directory_entry);
-
     }
 
     // Uvolnění dat
@@ -592,7 +611,7 @@ struct directory_entry *directory_get_entry(char *vfs_filename, int32_t inode_id
     if(inode_ptr->type == VFS_FILE_TYPE){
         free(inode_ptr);
         log_debug("directory_get_entry: Ocekavana slozka, INODE ID=%d je soubor!\n", inode_id);
-        return -7;
+        return NULL;
     }
 
     // Pokud máme symlink, potřebujeme dereferencovat a ověřit, zda ukazuje na složku
@@ -625,6 +644,159 @@ struct directory_entry *directory_get_entry(char *vfs_filename, int32_t inode_id
     free(entry);
     return NULL;
 
+}
+
+/**
+ * Ověří zda cesta ke složkce existuje, pokud existuje
+ * Ověří se, zda složka je prázdná,
+ * Pokud složka je prázdná, dealokují se databloky (včetně
+ * uvolnění bitmapy a inode index se označí jako volný
+ *
+ * @param vfs_filename CESTA k VFS souboru
+ * @param path cesta uvnitř VFS souboru
+ * @return (return < 0: chyba | return = 0: OK | return >0: Message)
+ */
+int32_t directory_delete(char *vfs_filename, char *path){
+    // Ověřování NULL
+    if(vfs_filename == NULL){
+        log_debug("directory_delete: Argument vfs_filename nemuze byt NULL!\n");
+        return -1;
+    }
+
+    // Kontrola délky názvu souboru
+    if(strlen(vfs_filename) < 1){
+        log_debug("directory_delete: Argument vfs_filename nemuze byt prazdnym retezcem!\n");
+        return -2;
+    }
+
+    // Ověření existence souboru
+    if(file_exist(vfs_filename) != TRUE){
+        log_debug("directory_delete: Cesta k souboru VFS neexistuje!\n");
+        return -3;
+    }
+
+    // Ověřování NULL pro cestu
+    if(path == NULL){
+        log_debug("directory_delete: Parametr path nemuze byt NULL!\n");
+        return -4;
+    }
+
+    // Overeni na delku cesty
+    if(strlen(path) < 1) {
+        log_debug("directory_delete: Cesta ke slozce uvnitr VFS nemuze byt prazdnym retezcem!\n");
+        return -5;
+    }
+
+    // Pokus o otevření souboru
+    VFS_FILE *vfs_file = vfs_open(vfs_filename, path);
+
+    // Soubor se nepodařilo otevřít
+    if(vfs_file == NULL){
+        log_info("directory_delete: Soubor uvnitr VFS nebyl otevren - neexistuje!\n");
+        return 1;
+    }
+
+    // Soubor není složka
+    if(vfs_file->inode_ptr->type != VFS_DIRECTORY){
+        vfs_close(vfs_file);
+        log_info("directory_delete: Soubor uvnitr VFS neni slozka!\n");
+        return 2;
+    }
+
+
+    // ID rodičovské složky
+    int32_t parent_id = directory_get_parent_id(vfs_filename, vfs_file->inode_ptr->id);
+
+    // Otevření rodičovské složky
+    VFS_FILE *vfs_parent = vfs_open_inode(vfs_filename, parent_id);
+
+    // Počet podsložek a souborů ve složce
+    int32_t count = (vfs_file->inode_ptr->file_size / sizeof(struct directory_entry)) - 2;
+
+    // Je více než
+    if(count > 0){
+        vfs_close(vfs_file);
+        vfs_close(vfs_parent);
+        log_info("directory_delete: Slozka neni prazdna!\n");
+        return 3;
+    }
+
+    // Zjištění kolikátý entry je slozka v rodiči
+    char *folder_name = get_suffix_string_after_last_character(path, "/");
+
+    // Alokace dat pro entry
+    struct directory_entry *entry = malloc(sizeof(struct directory_entry));
+
+    // Čtení directory entry do velikosti souboru
+    int32_t current_index = 0;
+    int32_t current = 0;
+    while(current + sizeof(struct directory_entry) <= vfs_parent->inode_ptr->file_size){
+        memset(entry, 0, sizeof(struct directory_entry));
+        vfs_read(entry, sizeof(struct directory_entry), 1, vfs_parent);
+
+       if(entry->inode_id == vfs_file->inode_ptr->id){
+            break;
+        }
+
+        // Posun na další prvek - vlastně jen pro podmínku, SEEK se upravuje v VFS_READ
+        current += sizeof(struct directory_entry);
+        current_index = current_index + 1;
+    }
+    free(entry);
+
+    // Kolik má rodič záznamů
+    int32_t parent_count = (vfs_parent->inode_ptr->file_size / sizeof(struct directory_entry));
+    int32_t last_parent_entry_index = parent_count - 1;
+
+    /*
+     * Je potřeba posunout záznam
+     * Posouváme poslední záznam na místo mazaného
+     * Zmenšujeme velikost složky o 1 entry
+     */
+    if(last_parent_entry_index != current_index){
+        int64_t seek = sizeof(struct directory_entry) * last_parent_entry_index;
+        vfs_seek(vfs_parent, seek, SEEK_SET);
+
+        // Přečtení poslední entry
+        struct directory_entry *replace_entry = malloc(sizeof(struct directory_entry));
+        memset(replace_entry, 0, sizeof(struct directory_entry));
+        vfs_read(replace_entry, sizeof(struct directory_entry), 1, vfs_parent);
+
+        // Seek na zápis
+        int64_t seek_write = sizeof(struct directory_entry) * current_index;
+        vfs_seek(vfs_parent, seek_write, SEEK_SET);
+        vfs_write(replace_entry, sizeof(struct directory_entry), 1, vfs_parent);
+
+        // Smazání staré entry
+        vfs_seek(vfs_parent, seek, SEEK_SET);
+        memset(replace_entry, 0, sizeof(struct directory_entry));
+        vfs_write(replace_entry, sizeof(struct directory_entry), 1, vfs_parent);
+
+        log_debug("directory_delete: Zaznam ve slozce %d presunut na %d\n", last_parent_entry_index, current_index);
+
+        // Zmensen velikosti slozky o smazany zaznam
+        vfs_parent->inode_ptr->file_size = vfs_parent->inode_ptr->file_size - sizeof(struct directory_entry);
+        inode_write_to_index(vfs_filename, vfs_parent->inode_ptr->id - 1, vfs_parent->inode_ptr);
+
+        free(replace_entry);
+    }
+
+    // Dealokování všech dat v INODE
+    int32_t  dealloc_result = deallocate(vfs_filename, vfs_file->inode_ptr);
+
+    // Smazat inode
+    struct inode *empty_inode = malloc(sizeof(struct inode));
+    memset(empty_inode, 0, sizeof(struct inode));
+    inode_write_to_index(vfs_filename, vfs_file->inode_ptr->id - 1, empty_inode);
+
+    // Uvolnění zdrojů
+    vfs_close(vfs_file);
+    vfs_close(vfs_parent);
+    free(empty_inode);
+    free(folder_name);
+
+    // ALL OK
+    return 0;
 }
 
 

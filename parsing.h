@@ -117,4 +117,11 @@ char *str_prepend(char *prefix, char *string);
  */
 char *path_parse_absolute(struct shell *sh, const char *parsing);
 
+/**
+ * Převede typ souboru z čísla na řetězec
+ * @param type typ souboru
+ * @return ukazatel na řetězec
+ */
+char *filetype_to_short(int32_t type);
+
 #endif //KIV_ZOS_PARSING_H

@@ -30,6 +30,19 @@ struct directory_entry {
 int32_t directory_create(char *vfs_filename, char *path);
 
 /**
+ * Ověří zda cesta ke složkce existuje, pokud existuje
+ * Ověří se, zda složka je prázdná,
+ * Pokud složka je prázdná, dealokují se databloky (včetně
+ * uvolnění bitmapy a inode index se označí jako volný
+ *
+ * @param vfs_filename CESTA k VFS souboru
+ * @param path cesta uvnitř VFS souboru
+ * @return (return < 0: chyba | return = 0: OK | return >0: Message)
+ */
+int32_t directory_delete(char *vfs_filename, char *path);
+
+
+/**
  * Vypíše obsah složky ve VFS s danou cestou (příkaz LS)
  * @param vfs_filename cesta k VFS souboru
  * @param path cesta uvnitř VFS
@@ -88,5 +101,8 @@ int32_t directory_get_parent_id(char *vfs_filename, int32_t inode_id);
  * @return výsledek operace (struct directory_entry * | NULL)
  */
 struct directory_entry *directory_get_entry(char *vfs_filename, int32_t inode_id ,char *entry_name);
+
+
+
 
 #endif //KIV_ZOS_DIRECTORY_H

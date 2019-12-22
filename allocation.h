@@ -46,4 +46,13 @@ int32_t allocate_data_blocks(char *filename, int32_t allocation_size, struct ino
  */
 bool allocation_clear_cluster(char *filename, int32_t address);
 
+/**
+ * Dealokuje všechny alokované databloky v INODE
+ *
+ * @param filename soubor vfs
+ * @param inode_ptr ukazatel na strukturu inode
+ * @return výsledek operace
+ */
+int32_t deallocate(char *filename, struct inode *inode_ptr);
+
 #endif //KIV_ZOS_ALLOCATION_H

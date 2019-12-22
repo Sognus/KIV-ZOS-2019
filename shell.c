@@ -190,15 +190,37 @@ void shell_parse(struct shell *sh, char *command){
         flag_command = TRUE;
     }
 
-    // Příkaz -> cat -> bez parame
+    // Příkaz -> cat -> bez parametrů
     if(strcicmp(token, "cat\n") == 0){
         printf("cat: Required parameters are missing!\n");
         flag_command = TRUE;
     }
 
-    // Příkaz -> cat -> bez parame
+    // Příkaz -> cat -> parametr cesta k souboru ve VFS
     if(strcicmp(token, "cat") == 0){
         cmd_cat(sh, cmd);
+        flag_command = TRUE;
+    }
+
+    // Příkaz rmdir -> bez parametrů
+    if(strcicmp(token, "rmdir\n") == 0){
+        printf("rmdir: Required parameter is missing!\n");
+        flag_command = TRUE;
+    }
+
+    // Příkaz rmdir -> parametr cesta ke slozce
+    if(strcicmp(token, "rmdir") == 0){
+        cmd_rmdir(sh, cmd);
+        flag_command = TRUE;
+    }
+
+    if(strcicmp(token, "rm\n") == 0){
+        printf("rm: Required parameter is missing!\n");
+        flag_command = TRUE;
+    }
+
+    if(strcicmp(token, "rm") == 0){
+        cmd_rm(sh, cmd);
         flag_command = TRUE;
     }
 
