@@ -76,5 +76,13 @@ void cmd_rmdir(struct shell *sh, char *command);
  */
 void cmd_rm(struct shell *sh, char *command);
 
+/**
+ * Příkaz: přesun souboru uvnitř VFS
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_mv(struct shell *sh, char *command);
+
 
 #endif //KIV_ZOS_COMMANDS_H

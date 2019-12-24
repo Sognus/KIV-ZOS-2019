@@ -662,3 +662,237 @@ void cmd_rm(struct shell *sh, char *command){
 
     free(path_absolute);
 }
+
+/**
+ * Příkaz: přesun souboru uvnitř VFS
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_mv(struct shell *sh, char *command){
+    if (sh == NULL) {
+        log_debug("cmd_mv: Nelze zpracovat prikaz. Kontext terminalu je NULL!\n");
+        return;
+    }
+
+    if (command == NULL) {
+        log_debug("cmd_mv: Nelze zpracovat prikaz. Prikaz je NULL!\n");
+        return;
+    }
+
+    if (strlen(command) < 1) {
+        log_debug("cmd_mv: Nelze zpracovat prikaz. Prikaz je prazdnym retezcem!\n");
+        return;
+    }
+
+    char *first = NULL;
+    char *token = NULL;
+    // Jméno příkazu
+    token = strtok(command, " ");
+
+    // První parametr příkazu
+    token = strtok(NULL, " ");
+    if(token == NULL){
+        printf("mv: First parameter is missing!\n");
+        return;
+    }
+    first = malloc(sizeof(char) * strlen(token) + 1);
+    strcpy(first, token);
+
+    // Druhý parametr příkazu
+    token = strtok(NULL, " ");
+    if(token == NULL){
+        free(first);
+        printf("mv: Second parameter is missing!\n");
+        return;
+    }
+
+    // Uprava posledniho parametru - odstraneni \n
+    if(token[strlen(token)-1] == '\n'){
+        token[strlen(token)-1] = '\0';
+    }
+
+    char *path_absolute_source = NULL;
+
+
+    // Převod na absolutní cestu
+    if(starts_with("/", first)){
+        path_absolute_source = path_parse_absolute(sh, first);
+    }else {
+        char *cwd = directory_get_path(sh->vfs_filename, sh->cwd);
+        char *mashed = str_prepend(cwd, first);
+        path_absolute_source = path_parse_absolute(sh, mashed);
+        free(mashed);
+        free(cwd);
+    }
+
+    if(path_absolute_source == NULL){
+        free(first);
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        log_debug("cmd_mv: Nepodarilo se prevest cestu zdroje na absolutni");
+        return;
+    }
+
+    char *path_absolute_target = NULL;
+
+    if(strcmp(token, "/") == 0){
+        path_absolute_target = malloc(sizeof(char) * 2);
+        strcpy(path_absolute_target, "/");
+    }
+    else {
+        // Převod na absolutní cestu
+        if (starts_with("/", token)) {
+            path_absolute_target = path_parse_absolute(sh, token);
+        } else {
+            char *cwd = directory_get_path(sh->vfs_filename, sh->cwd);
+            char *mashed = str_prepend(cwd, token);
+            path_absolute_target = path_parse_absolute(sh, mashed);
+            free(mashed);
+            free(cwd);
+        }
+    }
+
+    if(path_absolute_target == NULL){
+        free(path_absolute_source);
+        free(first);
+        printf("PATH NOT FOUND (neexistuje cilova cesta) \n");
+        log_debug("cmd_mv: Nepodarilo se prevest cestu cile na absolutni");
+        return;
+    }
+
+    // Zjištění prefix cesty zdroje
+    char *path_prefix = get_prefix_string_until_last_character(path_absolute_source, "/");
+    // Zjištění suffix cesty - název souboru
+    char *file_name = get_suffix_string_after_last_character(path_absolute_source, "/");
+
+    // Otevření VFS souborů
+    VFS_FILE *source_folder = vfs_open(sh->vfs_filename, path_prefix);
+    VFS_FILE *target_folder = vfs_open(sh->vfs_filename, path_absolute_target);
+
+
+    if(source_folder == NULL){
+        free(path_absolute_source);
+        free(first);
+        free(path_absolute_target);
+        free(file_name);
+        free(path_prefix);
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        return;
+    }
+
+    if(target_folder == NULL){
+        vfs_close(source_folder);
+        free(path_absolute_source);
+        free(first);
+        free(path_prefix);
+        free(file_name);
+        free(path_absolute_target);
+        printf("PATH NOT FOUND (neexistuje cílová cesta)\n");
+        return;
+    }
+
+    log_debug("source_f -> target_f = %d -> %d\n", source_folder->inode_ptr->id, target_folder->inode_ptr->id);
+
+    // Pokud je zdroj a cíl stejný, neděláme nic
+    if(source_folder->inode_ptr->id == target_folder->inode_ptr->id){
+        vfs_close(source_folder);
+        vfs_close(target_folder);
+        free(path_absolute_source);
+        free(first);
+        free(path_prefix);
+        free(file_name);
+        free(path_absolute_target);
+
+        printf("OK\n");
+        return;
+    }
+
+    /*
+     * Máme zdroj složku a cíl složku, smažeme záznam ze zdroj složky
+     * a umístíme ho do cíl složky
+     */
+    if(directory_has_entry(sh->vfs_filename, source_folder->inode_ptr->id, file_name) < 1){
+        vfs_close(source_folder);
+        vfs_close(target_folder);
+        free(path_absolute_source);
+        free(first);
+        free(path_prefix);
+        free(file_name);
+        free(path_absolute_target);
+
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        return;
+    }
+
+    // Vymazání záznamu v rodiči
+    // Alokace dat pro entry
+    struct directory_entry *entry = malloc(sizeof(struct directory_entry));
+
+    // Čtení directory entry do velikosti souboru
+    int32_t current_index = 0;
+    int32_t current = 0;
+    while(current + sizeof(struct directory_entry) <= source_folder->inode_ptr->file_size){
+        memset(entry, 0, sizeof(struct directory_entry));
+        vfs_read(entry, sizeof(struct directory_entry), 1, source_folder);
+
+        if(strcmp(entry->name, file_name) == 0){
+            break;
+        }
+
+        // Posun na další prvek - vlastně jen pro podmínku, SEEK se upravuje v VFS_READ
+        current += sizeof(struct directory_entry);
+        current_index = current_index + 1;
+    }
+
+    // Kolik má rodič záznamů
+    int32_t parent_count = (source_folder->inode_ptr->file_size / sizeof(struct directory_entry));
+    int32_t last_parent_entry_index = parent_count - 1;
+
+    /*
+     * Je potřeba posunout záznam
+     * Posouváme poslední záznam na místo mazaného
+     * Zmenšujeme velikost složky o 1 entry
+     */
+    if(last_parent_entry_index != current_index){
+        int64_t seek = sizeof(struct directory_entry) * last_parent_entry_index;
+        vfs_seek(source_folder, seek, SEEK_SET);
+
+        // Přečtení poslední entry
+        struct directory_entry *replace_entry = malloc(sizeof(struct directory_entry));
+        memset(replace_entry, 0, sizeof(struct directory_entry));
+        vfs_read(replace_entry, sizeof(struct directory_entry), 1, source_folder);
+
+        // Seek na zápis
+        int64_t seek_write = sizeof(struct directory_entry) * current_index;
+        vfs_seek(source_folder, seek_write, SEEK_SET);
+        vfs_write(replace_entry, sizeof(struct directory_entry), 1, source_folder);
+
+        // Smazání staré entry
+        vfs_seek(source_folder, seek, SEEK_SET);
+        memset(replace_entry, 0, sizeof(struct directory_entry));
+        vfs_write(replace_entry, sizeof(struct directory_entry), 1, source_folder);
+
+        log_debug("directory_delete: Zaznam ve slozce %d presunut na %d\n", last_parent_entry_index, current_index);
+
+        // Zmensen velikosti slozky o smazany zaznam
+        source_folder->inode_ptr->file_size = source_folder->inode_ptr->file_size - sizeof(struct directory_entry);
+        inode_write_to_index(sh->vfs_filename, source_folder->inode_ptr->id - 1, source_folder->inode_ptr);
+
+        free(replace_entry);
+    }
+
+    // Zápis smazaného záznamu do cílové složky
+    directory_add_entry(target_folder, entry);
+
+    printf("OK\n");
+
+    // Uvolnění zdrojů
+    free(entry);
+    vfs_close(source_folder);
+    vfs_close(target_folder);
+    free(path_absolute_source);
+    free(first);
+    free(path_prefix);
+    free(file_name);
+    free(path_absolute_target);
+}

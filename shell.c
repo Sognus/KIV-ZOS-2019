@@ -214,13 +214,27 @@ void shell_parse(struct shell *sh, char *command){
         flag_command = TRUE;
     }
 
+    // Příkaz rm -> bez parametru
     if(strcicmp(token, "rm\n") == 0){
         printf("rm: Required parameter is missing!\n");
         flag_command = TRUE;
     }
 
+    // Příkaz rm -> parametr cesta k souboru
     if(strcicmp(token, "rm") == 0){
         cmd_rm(sh, cmd);
+        flag_command = TRUE;
+    }
+
+    // Příkaz mv -> bez parametrů
+    if(strcicmp(token, "mv\n") == 0){
+        printf("mv: Required parameters are missing!\n");
+        flag_command = TRUE;
+    }
+
+    // Příkaz mv -> bez parametrů
+    if(strcicmp(token, "mv") == 0){
+        cmd_mv(sh, cmd);
         flag_command = TRUE;
     }
 

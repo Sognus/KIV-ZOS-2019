@@ -62,6 +62,7 @@ vfs.dat
 
 # Random text files
 *.txt
+file
 
 # Dumps
 vgcore.*

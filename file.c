@@ -48,9 +48,6 @@ int32_t file_create(char *vfs_filename, char *path){
     // Zjištění suffix cesty - název složky
     char *file_name = get_suffix_string_after_last_character(path, "/");
 
-    printf("path_prefix: %s\n", path_prefix);
-    printf("file_name: %s\n", file_name);
-
     VFS_FILE *dir = vfs_open(vfs_filename, path_prefix);
 
     // Rodičovská složka neexistuje
@@ -174,7 +171,7 @@ int32_t file_delete(char *vfs_filename, char *path){
 
     // Zjištění prefix cesty
     char *path_prefix = get_prefix_string_until_last_character(path, "/");
-    // Zjištění suffix cesty - název složky
+    // Zjištění suffix cesty - název souboru
     char *file_name = get_suffix_string_after_last_character(path, "/");
 
     // Otevření souboru
