@@ -85,4 +85,12 @@ void cmd_rm(struct shell *sh, char *command);
 void cmd_mv(struct shell *sh, char *command);
 
 
+/**
+ * Příkaz: kopírování souboru
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_cp(struct shell *sh, char *command);
+
 #endif //KIV_ZOS_COMMANDS_H

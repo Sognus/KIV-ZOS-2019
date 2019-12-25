@@ -232,9 +232,21 @@ void shell_parse(struct shell *sh, char *command){
         flag_command = TRUE;
     }
 
-    // Příkaz mv -> bez parametrů
+    // Příkaz mv -> 2 parametry source-file a target-folder
     if(strcicmp(token, "mv") == 0){
         cmd_mv(sh, cmd);
+        flag_command = TRUE;
+    }
+
+    // Příkaz cp -> bez parametrů
+    if(strcicmp(token, "cp\n") == 0){
+        printf("cp: Required parameters are missing!\n");
+        flag_command = TRUE;
+    }
+
+    // Příkaz cp -> 2 parametry source-file, target-folder
+    if(strcicmp(token, "cp") == 0){
+        cmd_cp(sh, cmd);
         flag_command = TRUE;
     }
 

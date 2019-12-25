@@ -896,3 +896,168 @@ void cmd_mv(struct shell *sh, char *command){
     free(file_name);
     free(path_absolute_target);
 }
+
+/**
+ * Příkaz: kopírování souboru
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_cp(struct shell *sh, char *command){
+    if (sh == NULL) {
+        log_debug("cmd_cp: Nelze zpracovat prikaz. Kontext terminalu je NULL!\n");
+        return;
+    }
+
+    if (command == NULL) {
+        log_debug("cmd_cp: Nelze zpracovat prikaz. Prikaz je NULL!\n");
+        return;
+    }
+
+    if (strlen(command) < 1) {
+        log_debug("cmd_cp: Nelze zpracovat prikaz. Prikaz je prazdnym retezcem!\n");
+        return;
+    }
+
+    char *first = NULL;
+    char *token = NULL;
+    // Jméno příkazu
+    token = strtok(command, " ");
+
+    // První parametr příkazu
+    token = strtok(NULL, " ");
+    if(token == NULL){
+        printf("mv: First parameter is missing!\n");
+        return;
+    }
+    first = malloc(sizeof(char) * strlen(token) + 1);
+    strcpy(first, token);
+
+    // Druhý parametr příkazu
+    token = strtok(NULL, " ");
+    if(token == NULL){
+        free(first);
+        printf("mv: Second parameter is missing!\n");
+        return;
+    }
+
+    // Uprava posledniho parametru - odstraneni \n
+    if(token[strlen(token)-1] == '\n'){
+        token[strlen(token)-1] = '\0';
+    }
+
+    char *path_absolute_source = NULL;
+
+
+    // Převod na absolutní cestu
+    if(starts_with("/", first)){
+        path_absolute_source = path_parse_absolute(sh, first);
+    }else {
+        char *cwd = directory_get_path(sh->vfs_filename, sh->cwd);
+        char *mashed = str_prepend(cwd, first);
+        path_absolute_source = path_parse_absolute(sh, mashed);
+        free(mashed);
+        free(cwd);
+    }
+
+    if(path_absolute_source == NULL){
+        free(first);
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        log_debug("cmd_mv: Nepodarilo se prevest cestu zdroje na absolutni");
+        return;
+    }
+
+    char *path_absolute_target = NULL;
+
+    if(strcmp(token, "/") == 0){
+        path_absolute_target = malloc(sizeof(char) * 2);
+        strcpy(path_absolute_target, "/");
+    }
+    else {
+        // Převod na absolutní cestu
+        if (starts_with("/", token)) {
+            path_absolute_target = path_parse_absolute(sh, token);
+        } else {
+            char *cwd = directory_get_path(sh->vfs_filename, sh->cwd);
+            char *mashed = str_prepend(cwd, token);
+            path_absolute_target = path_parse_absolute(sh, mashed);
+            free(mashed);
+            free(cwd);
+        }
+    }
+
+    if(path_absolute_target == NULL){
+        free(path_absolute_source);
+        free(first);
+        printf("PATH NOT FOUND (neexistuje cilova cesta) \n");
+        log_debug("cmd_cp: Nepodarilo se prevest cestu cile na absolutni");
+        return;
+    }
+
+    VFS_FILE *source = vfs_open(sh->vfs_filename, path_absolute_source);
+
+    if(source == NULL){
+        free(path_absolute_source);
+        free(path_absolute_target);
+        free(first);
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        return;
+    }
+
+    if(source->inode_ptr->type == VFS_DIRECTORY){
+        free(path_absolute_source);
+        free(path_absolute_target);
+        free(first);
+        printf("FILE NOT FOUND (neni zdroj)\n");
+    }
+
+    // Vytvoření souboru pokud je potřeba
+    int32_t id = file_create(sh->vfs_filename, path_absolute_target);
+
+    VFS_FILE *target = vfs_open(sh->vfs_filename, path_absolute_target);
+
+    if(target == NULL){
+        vfs_close(source);
+        free(path_absolute_source);
+        free(path_absolute_target);
+        free(first);
+        printf("PATH NOT FOUND (neexistuje cilova cesta) \n");
+        log_debug("cmd_incp: Cilove umisteni neexistuje!\n");
+        return;
+    }
+
+    if(target->inode_ptr->type == VFS_DIRECTORY){
+        vfs_close(source);
+        free(path_absolute_source);
+        free(path_absolute_target);
+        free(first);
+        printf("PATH NOT FOUND (neexistuje cilova cesta) \n");
+        log_debug("cmd_incp: Cilove umisteni neexistuje!\n");
+        return;
+    }
+
+    vfs_seek(target, 0, SEEK_SET);
+    vfs_seek(source, 0, SEEK_SET);
+
+    char *read_byte = malloc(sizeof(char) * 1);
+    int32_t written = 0;
+    while (written < source->inode_ptr->file_size){
+        memset(read_byte, 0, sizeof(char) * 1);
+        vfs_read(read_byte, sizeof(char) * 1, 1, source);
+        vfs_write(read_byte, sizeof(char) * 1, 1, target);
+
+        // Posun o 1 byte
+        written = written + 1;
+    }
+
+
+    printf("OK\n");
+
+    // Uvolnění zdrojů
+    vfs_close(target);
+    vfs_close(source);
+    free(path_absolute_source);
+    free(path_absolute_target);
+    free(first);
+    free(read_byte);
+}
