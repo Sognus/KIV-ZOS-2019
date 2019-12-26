@@ -93,4 +93,39 @@ void cmd_mv(struct shell *sh, char *command);
  */
 void cmd_cp(struct shell *sh, char *command);
 
+
+/**
+ * Příkaz: kopie souboru VFS -> system
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_outcp(struct shell *sh, char *command);
+
+
+/**
+ * Příkaz: načtení příkazů ze souboru
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_load(struct shell *sh, char *command);
+
+/**
+ * Příkaz: Výpis informací o souboru
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_info(struct shell *sh, char *command);
+
+
+/**
+ * Příkaz: vytvoření symlinku
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_lns(struct shell *sh, char *command);
+
 #endif //KIV_ZOS_COMMANDS_H

@@ -8,6 +8,7 @@
 #include "structure.h"
 #include "directory.h"
 #include "file.h"
+#include "symlink.h"
 
 /**
  * Příkaz PWD
@@ -137,10 +138,14 @@ void cmd_cd(struct shell *sh, char *command) {
         return;
     }
 
-    // TODO: prelozeni symlinku
 
     // Pokus o otevření souboru
     VFS_FILE *vfs_file = vfs_open(sh->vfs_filename, path_absolute);
+
+    // Dereference symlinku
+    while(vfs_file->inode_ptr->type == VFS_SYMLINK){
+        vfs_file = symlink_dereference(sh->vfs_filename, vfs_file);
+    }
 
     // Pokud se podařilo otevřít soubor a soubor je složka, změníme CWD na cíl. složku
     if(vfs_file != NULL && vfs_file->inode_ptr->type == VFS_DIRECTORY){
@@ -287,7 +292,23 @@ void cmd_ls(struct shell *sh, char *command){
             free(cwd);
         }
 
-        printf("path_absolute: %s\n", path_absolute);
+        if(path_absolute == NULL){
+            printf("PATH NOT FOUND (neexistujici adresar)\n");
+            return;
+        }
+
+        VFS_FILE *vfs_file = vfs_open(sh->vfs_filename, path_absolute);
+
+        if(vfs_file == NULL){
+            printf("PATH NOT FOUND (neexistujici adresar)\n");
+            free(path_absolute);
+            return;
+        }
+
+        // Dereference symlinku
+        while(vfs_file->inode_ptr->type == VFS_SYMLINK){
+            vfs_file = symlink_dereference(sh->vfs_filename, vfs_file);
+        }
 
         // Výpis obsahu složky
         int print_result = directory_entries_print(sh->vfs_filename, path_absolute);
@@ -386,6 +407,7 @@ void cmd_incp(struct shell *sh, char *command){
     // Otevřeni ciloveho souboru
     VFS_FILE *target = vfs_open(sh->vfs_filename, path_absolute);
 
+
     if(target == NULL){
         printf("PATH NOT FOUND (neexistuje cilova cesta) \n");
         log_debug("cmd_incp: Cilove umisteni neexistuje!\n");
@@ -404,6 +426,7 @@ void cmd_incp(struct shell *sh, char *command){
     vfs_seek(target, 0, SEEK_SET);
     fseek(external, 0, SEEK_SET);
 
+    int64_t written = 0;
     int c = 0;
     while ((c = getc(external)) != EOF){
         int result = vfs_write(&c, 1, 1, target);
@@ -413,6 +436,12 @@ void cmd_incp(struct shell *sh, char *command){
             printf("PARTIAL WRITE\n");
             return;
         }
+        written++;
+
+        if(written % 4096 == 0){
+            printf("4096 Bytes written (%ld total)\n", written);
+        }
+
     }
 
     printf("OK\n");
@@ -491,7 +520,10 @@ void cmd_cat(struct shell *sh, char *command){
         return;
     }
 
-    // TODO: překlad symlinku
+    // Dereference symlinku
+    while(source->inode_ptr->type == VFS_SYMLINK){
+        source = symlink_dereference(sh->vfs_filename, source);
+    }
 
     if(source->inode_ptr->type != VFS_FILE_TYPE){
         free(path_absolute);
@@ -927,7 +959,7 @@ void cmd_cp(struct shell *sh, char *command){
     // První parametr příkazu
     token = strtok(NULL, " ");
     if(token == NULL){
-        printf("mv: First parameter is missing!\n");
+        printf("cp: First parameter is missing!\n");
         return;
     }
     first = malloc(sizeof(char) * strlen(token) + 1);
@@ -937,7 +969,7 @@ void cmd_cp(struct shell *sh, char *command){
     token = strtok(NULL, " ");
     if(token == NULL){
         free(first);
-        printf("mv: Second parameter is missing!\n");
+        printf("cp: Second parameter is missing!\n");
         return;
     }
 
@@ -963,7 +995,7 @@ void cmd_cp(struct shell *sh, char *command){
     if(path_absolute_source == NULL){
         free(first);
         printf("FILE NOT FOUND (neni zdroj)\n");
-        log_debug("cmd_mv: Nepodarilo se prevest cestu zdroje na absolutni");
+        log_debug("cmd_cp: Nepodarilo se prevest cestu zdroje na absolutni");
         return;
     }
 
@@ -1060,4 +1092,524 @@ void cmd_cp(struct shell *sh, char *command){
     free(path_absolute_target);
     free(first);
     free(read_byte);
+}
+
+/**
+ * Příkaz: ;kopie souboru VFS -> system
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_outcp(struct shell *sh, char *command) {
+    if (sh == NULL) {
+        log_debug("cmd_outcp: Nelze zpracovat prikaz. Kontext terminalu je NULL!\n");
+        return;
+    }
+
+    if (command == NULL) {
+        log_debug("cmd_outcp: Nelze zpracovat prikaz. Prikaz je NULL!\n");
+        return;
+    }
+
+    if (strlen(command) < 1) {
+        log_debug("cmd_outcp: Nelze zpracovat prikaz. Prikaz je prazdnym retezcem!\n");
+        return;
+    }
+
+    char *first = NULL;
+    char *token = NULL;
+    // Jméno příkazu
+    token = strtok(command, " ");
+
+    // První parametr příkazu
+    token = strtok(NULL, " ");
+    if(token == NULL){
+        printf("outcp: First parameter is missing!\n");
+        return;
+    }
+    first = malloc(sizeof(char) * strlen(token) + 1);
+    strcpy(first, token);
+
+    // Druhý parametr příkazu
+    token = strtok(NULL, " ");
+    if(token == NULL){
+        free(first);
+        printf("outcp: Second parameter is missing!\n");
+        return;
+    }
+
+    // Uprava posledniho parametru - odstraneni \n
+    if(token[strlen(token)-1] == '\n'){
+        token[strlen(token)-1] = '\0';
+    }
+
+    char *path_absolute_source = NULL;
+
+
+    // Převod na absolutní cestu
+    if(starts_with("/", first)){
+        path_absolute_source = path_parse_absolute(sh, first);
+    }else {
+        char *cwd = directory_get_path(sh->vfs_filename, sh->cwd);
+        char *mashed = str_prepend(cwd, first);
+        path_absolute_source = path_parse_absolute(sh, mashed);
+        free(mashed);
+        free(cwd);
+    }
+
+    if(path_absolute_source == NULL){
+        free(first);
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        log_debug("cmd_outcp: Nepodarilo se prevest cestu zdroje na absolutni");
+        return;
+    }
+
+    VFS_FILE *source = vfs_open(sh->vfs_filename, path_absolute_source);
+
+    if(source == NULL){
+        free(first);
+        free(path_absolute_source);
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        return;
+    }
+
+    FILE *target = fopen(token, "wb");
+
+    if(target == NULL){
+        printf("PATH NOT FOUND (neexistuje cilova cesta)\n");
+        vfs_close(source);
+        free(first);
+        free(path_absolute_source);
+        return;
+    }
+
+    vfs_seek(source, 0, SEEK_SET);
+    fseek(target, 0, SEEK_SET);
+
+    char *buffer = malloc(sizeof(char) * 1);
+    int64_t written = 0;
+    while(written < source->inode_ptr->file_size){
+        memset(buffer, 0, sizeof(char));
+        vfs_read(buffer, sizeof(char), 1, source);
+        size_t written_count = fwrite(buffer, sizeof(char), 1, target);
+
+        if(written_count < 1){
+            printf("PARTIAL WRITE!\n");
+            vfs_close(source);
+            fclose(target);
+            free(buffer);
+            free(first);
+            free(path_absolute_source);
+            return;
+        }
+
+        written = written + sizeof(char);
+    }
+
+    printf("OK\n");
+
+    vfs_close(source);
+    fclose(target);
+    free(buffer);
+    free(first);
+    free(path_absolute_source);
+}
+
+/**
+ * Příkaz: načtení příkazů ze souboru
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_load(struct shell *sh, char *command){
+    if (sh == NULL) {
+        log_debug("cmd_load: Nelze zpracovat prikaz. Kontext terminalu je NULL!\n");
+        return;
+    }
+
+    if (command == NULL) {
+        log_debug("cmd_load: Nelze zpracovat prikaz. Prikaz je NULL!\n");
+        return;
+    }
+
+    if (strlen(command) < 1) {
+        log_debug("cmd_load: Nelze zpracovat prikaz. Prikaz je prazdnym retezcem!\n");
+        return;
+    }
+
+    char *token = NULL;
+    // Jméno příkazu
+    token = strtok(command, " ");
+
+    // První parametr příkazu
+    token = strtok(NULL, " ");
+    if(token == NULL){
+        printf("load: Parameter is missing!\n");
+        return;
+    }
+
+    // Uprava posledniho parametru - odstraneni \n
+    if(token[strlen(token)-1] == '\n'){
+        token[strlen(token)-1] = '\0';
+    }
+
+    if(file_exist(token) != TRUE){
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        return;
+    }
+
+    FILE *source = fopen(token, "r+b");
+
+    if(source == NULL){
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        return;
+    }
+
+    size_t len = 0;
+    char *line = NULL;
+    ssize_t read;
+    while ((read = getline(&line, &len, source)) != -1) {
+        char *line_copy = malloc(sizeof(char) * strlen(line) + 1);
+        memset(line_copy, 0, sizeof(char) * strlen(line) + 1);
+        strcpy(line_copy, line);
+
+        // odstraneni \n
+        if(line_copy[strlen(line_copy)-1] == '\n'){
+            line_copy[strlen(line_copy)-1]  = '\0';
+        }
+
+        // Výpis aktuálního příkazu
+        printf("%s -> ", line_copy);
+
+        // Uvolnění zdroje
+        free(line_copy);
+
+        // Zpracování příkazu
+        shell_parse(sh, line);
+    }
+
+
+    printf("OK\n");
+
+
+}
+
+/**
+ * Příkaz: Výpis informací o souboru
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_info(struct shell *sh, char *command){
+    if (sh == NULL) {
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        log_debug("cmd_info: Nelze zpracovat prikaz. Kontext terminalu je NULL!\n");
+        return;
+    }
+
+    if (command == NULL) {
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        log_debug("cmd_info: Nelze zpracovat prikaz. Prikaz je NULL!\n");
+        return;
+    }
+
+    if (strlen(command) < 1) {
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        log_debug("cmd_info: Nelze zpracovat prikaz. Prikaz je prazdnym retezcem!\n");
+        return;
+    }
+
+    char *token = NULL;
+    // Jméno příkazu
+    token = strtok(command, " ");
+
+    // První parametr příkazu
+    token = strtok(NULL, " ");
+    if(token == NULL){
+        printf("info: Parameter is missing!\n");
+        return;
+    }
+
+    // Uprava posledniho parametru - odstraneni \n
+    if(token[strlen(token)-1] == '\n'){
+        token[strlen(token)-1] = '\0';
+    }
+
+    char *path_absolute_source = NULL;
+
+    if(strcmp(token, "/") == 0){
+        path_absolute_source = malloc(sizeof(char) * 2);
+        memset(path_absolute_source, 0, sizeof(char) * 2);
+        strcpy(path_absolute_source, "/");
+    }
+    else {
+        // Převod na absolutní cestu
+        if (starts_with("/", token)) {
+            path_absolute_source = path_parse_absolute(sh, token);
+        } else {
+            char *cwd = directory_get_path(sh->vfs_filename, sh->cwd);
+            char *mashed = str_prepend(cwd, token);
+            path_absolute_source = path_parse_absolute(sh, mashed);
+            free(mashed);
+            free(cwd);
+        }
+    }
+
+    VFS_FILE *source = vfs_open(sh->vfs_filename, path_absolute_source);
+
+    if(source == NULL){
+        free(token);
+        free(path_absolute_source);
+        printf("FILE NOT FOUND (neni zdroj)\n");
+        return;
+    }
+
+    char *vfs_name = NULL;
+
+    if(strcmp(path_absolute_source, "/") == 0){
+        vfs_name = malloc(sizeof(char) * 2);
+        memset(vfs_name, 0, sizeof(char) * 2);
+        strcpy(vfs_name, "/");
+    } else {
+        vfs_name = get_suffix_string_after_last_character(token, "/");
+    }
+
+    // Výpis názvu
+    printf("NAME: %s\n", vfs_name);
+    // Výpis INODE-ID
+    printf("INODE-ID: %d\n", source->inode_ptr->id);
+    // Výpis TYPE
+    char *filetype = filetype_to_name(source->inode_ptr->type);
+    printf("TYPE: %s\n", filetype);
+    free(filetype);
+    // Výpis velikosti souboru
+    printf("SIZE: %d (byte/s)\n", source->inode_ptr->file_size);
+
+    // Výpis datových odkazů
+    printf("DATA POINTERS: \n");
+
+    if(source->inode_ptr->direct1 != 0){
+        printf("\tdirect1: 0x%x\n", source->inode_ptr->direct1);
+    }
+
+    if(source->inode_ptr->direct2 != 0){
+        printf("\tdirect2: 0x%x\n", source->inode_ptr->direct2);
+    }
+
+    if(source->inode_ptr->direct3 != 0){
+        printf("\tdirect3: 0x%x\n", source->inode_ptr->direct3);
+    }
+
+    if(source->inode_ptr->direct4 != 0){
+        printf("\tdirect4: 0x%x\n", source->inode_ptr->direct4);
+    }
+
+    if(source->inode_ptr->direct5 != 0){
+        printf("\tdirect5: 0x%x\n", source->inode_ptr->direct5);
+    }
+
+    struct superblock *superblock_ptr = superblock_from_file(sh->vfs_filename);
+
+    // Indirect 1
+    if(source->inode_ptr->indirect1 != 0){
+        printf("indirect1: 0x%x\n", source->inode_ptr->indirect1);
+
+        FILE *data = fopen(sh->vfs_filename, "r+b");
+        fseek(data, source->inode_ptr->indirect1, SEEK_SET);
+
+        int32_t *read_data = malloc(sizeof(int32_t));
+
+        int32_t indirect1_read = 0;
+        int32_t adress_per_cluster = superblock_ptr->cluster_size / sizeof(int32_t);
+        while(indirect1_read < adress_per_cluster){
+            memset(read_data, 0, sizeof(int32_t));
+            fread(read_data, sizeof(int32_t), 1, data);
+
+            if(*read_data == 0){
+                break;
+            }
+
+            printf("\t\tindirect1[%d]: 0x%x\n", indirect1_read, *read_data);
+
+            indirect1_read = indirect1_read + 1;
+        }
+
+        free(read_data);
+        fclose(data);
+    }
+
+    // Indirect 2
+    if(source->inode_ptr->indirect2 != 0){
+        printf("indirect2: 0x%x\n", source->inode_ptr->indirect2);
+
+        FILE *data = fopen(sh->vfs_filename, "r+b");
+        fseek(data, source->inode_ptr->indirect2, SEEK_SET);
+
+        int32_t adress_per_cluster = superblock_ptr->cluster_size / sizeof(int32_t);
+
+        int32_t *read_data = malloc(sizeof(int32_t));
+
+        int32_t indirect2_level1_read = 0;
+        while(indirect2_level1_read < adress_per_cluster){
+            fseek(data, source->inode_ptr->indirect2 + sizeof(int32_t) * indirect2_level1_read, SEEK_SET);
+            memset(read_data, 0, sizeof(int32_t));
+            fread(read_data, sizeof(int32_t), 1, data);
+
+            if(*read_data == 0){
+                break;
+            }
+
+            printf("\tindirect2[%d]: 0x%x\n", indirect2_level1_read, *read_data);
+
+            int32_t *level2_read_data = malloc(sizeof(int32_t));
+
+            int32_t indirect2_level2_read = 0;
+            while(indirect2_level2_read < adress_per_cluster){
+                fseek(data, *read_data + sizeof(int32_t) * indirect2_level2_read, SEEK_SET);
+                memset(level2_read_data, 0, sizeof(int32_t));
+                fread(level2_read_data, sizeof(int32_t), 1, data);
+
+                if(*level2_read_data == 0) {
+                    break;
+                }
+
+                printf("\t\tindirect2[%d][%d]: 0x%x\n", indirect2_level1_read, indirect2_level2_read, *level2_read_data);
+
+                indirect2_level2_read = indirect2_level2_read + 1;
+            }
+
+            free(level2_read_data);
+
+
+            indirect2_level1_read++;
+        }
+
+        free(read_data);
+        fclose(data);
+    }
+
+    vfs_close(source);
+    free(vfs_name);
+    free(path_absolute_source);
+}
+
+/**
+ * Příkaz: vytvoření symlinku
+ *
+ * @param sh
+ * @param command
+ */
+void cmd_lns(struct shell *sh, char *command){
+    if (sh == NULL) {
+        log_debug("cmd_lns: Nelze zpracovat prikaz. Kontext terminalu je NULL!\n");
+        return;
+    }
+
+    if (command == NULL) {
+        log_debug("cmd_lns: Nelze zpracovat prikaz. Prikaz je NULL!\n");
+        return;
+    }
+
+    if (strlen(command) < 1) {
+        log_debug("cmd_lns: Nelze zpracovat prikaz. Prikaz je prazdnym retezcem!\n");
+        return;
+    }
+
+    char *first = NULL;
+    char *token = NULL;
+    // Jméno příkazu
+    token = strtok(command, " ");
+
+    // První parametr příkazu
+    token = strtok(NULL, " ");
+    if(token == NULL){
+        printf("lns: First parameter is missing!\n");
+        return;
+    }
+    first = malloc(sizeof(char) * strlen(token) + 1);
+    strcpy(first, token);
+
+    // Druhý parametr příkazu
+    token = strtok(NULL, " ");
+    if(token == NULL){
+        free(first);
+        printf("lns: Second parameter is missing!\n");
+        return;
+    }
+
+    // Uprava posledniho parametru - odstraneni \n
+    if(token[strlen(token)-1] == '\n'){
+        token[strlen(token)-1] = '\0';
+    }
+
+    char *path_absolute_source = NULL;
+
+
+    // Převod na absolutní cestu
+    if(starts_with("/", first)){
+        path_absolute_source = path_parse_absolute(sh, first);
+    }else {
+        char *cwd = directory_get_path(sh->vfs_filename, sh->cwd);
+        char *mashed = str_prepend(cwd, first);
+        path_absolute_source = path_parse_absolute(sh, mashed);
+        free(mashed);
+        free(cwd);
+    }
+
+    if(path_absolute_source == NULL){
+        free(first);
+        printf("FILE NOT FOUND (neexistuje linkovany soubor)\n");
+        log_debug("cmd_lns: Nepodarilo se prevest cestu zdroje na absolutni");
+        return;
+    }
+
+    // Ověření existence zdrojového souboru
+    VFS_FILE *source = vfs_open(sh->vfs_filename, path_absolute_source);
+
+    if(source == NULL){
+        free(first);
+        free(path_absolute_source);
+        printf("FILE NOT FOUND (neexistuje linkovany soubor)\n");
+        return;
+    }
+
+    char *path_absolute_target = NULL;
+
+    if(strcmp(token, "/") == 0){
+        path_absolute_target = malloc(sizeof(char) * 2);
+        strcpy(path_absolute_target, "/");
+    }
+    else {
+        // Převod na absolutní cestu
+        if (starts_with("/", token)) {
+            path_absolute_target = path_parse_absolute(sh, token);
+        } else {
+            char *cwd = directory_get_path(sh->vfs_filename, sh->cwd);
+            char *mashed = str_prepend(cwd, token);
+            path_absolute_target = path_parse_absolute(sh, mashed);
+            free(mashed);
+            free(cwd);
+        }
+    }
+
+    if(path_absolute_target == NULL){
+        vfs_close(source);
+        free(path_absolute_source);
+        free(first);
+        printf("PATH NOT FOUND (nelze vytvorit symlink) \n");
+        log_debug("cmd_cp: Nepodarilo se prevest cestu cile na absolutni");
+        return;
+    }
+
+    int32_t symlink_result = symlink_create(sh->vfs_filename, path_absolute_target, path_absolute_source);
+
+    if(symlink_result != 0){
+        vfs_close(source);
+        free(path_absolute_source);
+        free(first);
+        printf("PATH NOT FOUND (nelze vytvorit symlink)\n");
+        return;
+    }
+
+    printf("OK\n");
 }

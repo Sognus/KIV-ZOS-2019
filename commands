@@ -1,0 +1,6 @@
+format 64KB
+mkdir folder1
+mkdir folder2
+cd folder1
+mkdir subfolder1
+cd /neexistuje

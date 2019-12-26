@@ -250,6 +250,54 @@ void shell_parse(struct shell *sh, char *command){
         flag_command = TRUE;
     }
 
+    // Příkaz outcp -> bez parametrů
+    if(strcicmp(token, "outcp\n") == 0) {
+        printf("outcp: Required parameters are missing!\n");
+        flag_command = TRUE;
+    }
+
+    // Příkaz outcp -> 2 parametry vfs_source fs_target
+    if(strcicmp(token, "outcp") == 0) {
+        cmd_outcp(sh, cmd);
+        flag_command = TRUE;
+    }
+
+    // Příkaz load -> bez parametrů
+    if(strcicmp(token, "load\n") == 0){
+        printf("load: Required parameter is missing!\n");
+        flag_command = TRUE;
+    }
+
+    // Příkaz load -> 1 parametr
+    if(strcicmp(token, "load") == 0){
+        cmd_load(sh, cmd);
+        flag_command = TRUE;
+    }
+
+    // Příkaz info - bez parametrů
+    if(strcicmp(token, "info\n") == 0){
+        printf("info: Required parameter is missing!\n");
+        flag_command = TRUE;
+    }
+
+    // Příkaz info - 1 parametr -> cesta k souboru VFS
+    if(strcicmp(token, "info") == 0){
+        cmd_info(sh, cmd);
+        flag_command = TRUE;
+    }
+
+    // Příkaz slink -> bez parametrů
+    if(strcicmp(token, "slink\n") == 0 || strcicmp(token, "lns\n") == 0){
+        printf("symlink: Required parameters are missing!\n");
+        flag_command = TRUE;
+    }
+
+    // Příkaz slink -> bez parametrů
+    if(strcicmp(token, "slink") == 0 || strcicmp(token, "lns") == 0){
+        cmd_lns(sh, cmd);
+        flag_command = TRUE;
+    }
+
     // Vždy poslední - vypsat: Neznámý příkaz
     if(flag_command == FALSE){
         printf("Unknown command!\n");
