@@ -19,7 +19,7 @@
 #define LOG_MODE_CURRENT LOG_MODE_APPEND
 
 // Nastavení výpisu do terminálu
-#define STDOUT_ENABLED TRUE
+#define STDOUT_ENABLED FALSE
 #define STDOUT_TIME_ENABLED FALSE
 
 // Definice levelů výpisu
@@ -34,7 +34,7 @@
  * Konstanty
  */
 #define DEBUG TRUE
-#define DEBUG_LEVEL LOG_INFO
+#define DEBUG_LEVEL LOG_ALL
 
 // Definice formátování
 #define LOG_TIME_FORMAT "%d.%m.%Y %H:%M:%S"

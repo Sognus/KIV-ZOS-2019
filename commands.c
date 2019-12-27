@@ -142,6 +142,12 @@ void cmd_cd(struct shell *sh, char *command) {
     // Pokus o otevření souboru
     VFS_FILE *vfs_file = vfs_open(sh->vfs_filename, path_absolute);
 
+    if(vfs_file == NULL){
+        printf("PATH NOT FOUND (neexistujici cesta)\n");
+        log_debug("cmd_cd: FILE NOT FOUND");
+        return;
+    }
+
     // Dereference symlinku
     while(vfs_file->inode_ptr->type == VFS_SYMLINK){
         vfs_file = symlink_dereference(sh->vfs_filename, vfs_file);

@@ -14,6 +14,11 @@
 #define IMPL_VFS_SIZE 65536
 
 int main(int argc, char *argv[]) {
+    // Nastaveni bufferu pro terminaly typu git bash kde stdout je pipe
+    #ifdef _WIN32
+        setvbuf(stdout, 0, _IONBF, 0);
+    #endif
+
     // Ověření počtu vstupních parametrů [1] = cesta k VFS
     if(argc < 2){
         log_fatal("Program spusten bez parametru!\n");
