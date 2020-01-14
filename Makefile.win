@@ -1,0 +1,59 @@
+# Compiler
+CC=gcc
+# Binary name
+BIN=KIV_ZOS.exe
+# Compiler flags
+CFLAGS=
+
+# xxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Build binary and then clean
+all: build clean
+
+build: main.o allocation.o bitmap.o commands.o debug.o directory.o file.o inode.o parsing.o shell.o structure.o superblock.o symlink.o vfs_io.o
+	 $(CC) $(CFLAGS) -lm -o $(BIN) main.o allocation.o bitmap.o commands.o debug.o directory.o file.o inode.o parsing.o shell.o structure.o superblock.o symlink.o vfs_io.o
+
+main.o: *.h
+	$(CC) $(CFLAGS) -c main.c
+
+allocation.o: *.h
+	$(CC) $(CFLAGS) -c allocation.c
+
+bitmap.o: *.h
+	$(CC) $(CFLAGS) -c bitmap.c
+
+commands.o: *.h
+	$(CC) $(CFLAGS) -c commands.c
+
+debug.o: *.h
+	$(CC) $(CFLAGS) -c debug.c
+
+directory.o: *.h
+	$(CC) $(CFLAGS) -c directory.c
+
+file.o: *.h
+	$(CC) $(CFLAGS) -c file.c
+
+inode.o: *.h
+	$(CC) $(CFLAGS) -c inode.c
+
+parsing.o: *.h
+	$(CC) $(CFLAGS) -c parsing.c
+
+shell.o: *.h
+	$(CC) $(CFLAGS) -c shell.c
+
+structure.o: *.h
+	$(CC) $(CFLAGS) -c structure.c
+
+superblock.o: *.h
+	$(CC) $(CFLAGS) -c superblock.c
+
+symlink.o: *.h
+	$(CC) $(CFLAGS) -c symlink.c
+
+vfs_io.o: *.h
+	$(CC) $(CFLAGS) -c vfs_io.c
+
+clean:
+	del *.o
