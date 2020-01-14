@@ -21,7 +21,8 @@ int main(int argc, char *argv[]) {
 
     // Ověření počtu vstupních parametrů [1] = cesta k VFS
     if(argc < 2){
-        log_fatal("Program spusten bez parametru!\n");
+        log_fatal("Program spusten bez parametru: pouzijte ./KIV_ZOS <cesta_k_vfs_souboru>!\n");
+        printf("Program spusten bez parametru: pouzijte ./KIV_ZOS <cesta_k_vfs_souboru>!\n");
         return -1;
     }
 
