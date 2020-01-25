@@ -981,6 +981,13 @@ void cmd_mv(struct shell *sh, char *command){
         free(replace_entry);
     }
 
+    // Smazani presunovaneho zaznamu pokud je posledni
+    if(last_parent_entry_index == current_index) {
+        // Zmensen velikosti slozky o smazany zaznam
+        source_folder->inode_ptr->file_size = source_folder->inode_ptr->file_size - sizeof(struct directory_entry);
+        inode_write_to_index(sh->vfs_filename, source_folder->inode_ptr->id - 1, source_folder->inode_ptr);
+    }
+
     // Zápis smazaného záznamu do cílové složky
     directory_add_entry(target_folder, entry);
 
