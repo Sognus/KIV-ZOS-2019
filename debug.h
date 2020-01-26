@@ -34,7 +34,7 @@
  * Konstanty
  */
 #define DEBUG TRUE
-#define DEBUG_LEVEL LOG_INFO
+#define DEBUG_LEVEL LOG_ALL
 
 // Definice formátování
 #define LOG_TIME_FORMAT "%d.%m.%Y %H:%M:%S"

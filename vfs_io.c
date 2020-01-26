@@ -328,7 +328,7 @@ size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, 
     // Alokace nevyšla
     if (allocation_result != 0) {
         log_debug("vfs_write: Nepodaril/y se alokovat data blok/y pro zapis!\n");
-        // TODO: skončit?
+        return -10;
     }
 
     // Výpočet v případě zápisu na více databloků
@@ -362,7 +362,7 @@ size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, 
     if (temp_total_write_size < first_datablock_can_write) {
         log_trace("vfs_write: Lze zapisovat vsechna data do prvniho databloku.\n");
 
-        // Z kterého databloku budeme číst
+        // Do kterého databloku budeme zapisovat
         int32_t datablock_address = inode_get_datablock_index_value(vfs_file->vfs_filename, vfs_file->inode_ptr,
                                                                     skipped_datablocks);
         // Přičteme offset k adrese
