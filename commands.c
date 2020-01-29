@@ -1176,17 +1176,21 @@ void cmd_cp(struct shell *sh, char *command){
     vfs_seek(target, 0, SEEK_SET);
     vfs_seek(source, 0, SEEK_SET);
 
-    char *read_byte = malloc(sizeof(char) * 1);
+    char *data_buffer = malloc(sizeof(char) * 4096);
     int32_t written = 0;
-    while (written < source->inode_ptr->file_size){
-        memset(read_byte, 0, sizeof(char) * 1);
-        vfs_read(read_byte, sizeof(char) * 1, 1, source);
-        vfs_write(read_byte, sizeof(char) * 1, 1, target);
+    while (written <= source->inode_ptr->file_size){
+        memset(data_buffer, 0, sizeof(char) * 4096);
+        ssize_t read_count = vfs_read(data_buffer, sizeof(char), 4096, source);
 
-        // Posun o 1 byte
-        written = written + 1;
+        ssize_t write_count = vfs_write(data_buffer, sizeof(char), read_count, target);
+
+        // Posun o počet přečtených byte
+        written = written + read_count;
+
+        if(written % 4096 == 0) {
+            printf("Copied 4096 bytes (total: %d/%d bytes)\n", written, source->inode_ptr->file_size);
+        }
     }
-
 
     printf("OK\n");
 
@@ -1196,7 +1200,7 @@ void cmd_cp(struct shell *sh, char *command){
     free(path_absolute_source);
     free(path_absolute_target);
     free(first);
-    free(read_byte);
+    free(data_buffer);
 }
 
 /**
