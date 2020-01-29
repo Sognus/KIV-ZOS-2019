@@ -918,6 +918,7 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
 
         // Otevření souboru ke čtení a zápisu
         FILE *indirect2_file = fopen(filename, "r+b");
+        fflush(indirect2_file);
 
         // Získání adresy ukazatele na datablok - úroven 1
         int32_t indirect2_level1_address = inode_ptr->indirect2 + (indirect2_level1_write_index * sizeof(int32_t));
@@ -927,10 +928,12 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
         // Nulování paměti
         memset(indirect2_level1_data, 0, sizeof(int32_t));
         // Nastavení místa čtení v souboru
+        fflush(indirect2_file);
         fseek(indirect2_file, indirect2_level1_address, SEEK_SET);
         // Čtení dat
-        fflush(indirect2_file);
         fread(indirect2_level1_data, sizeof(int32_t), 1, indirect2_file);
+        fflush(indirect2_file);
+
 
         // Alokace clusteru pokud je odkaz NULL
         if(*indirect2_level1_data == 0){
@@ -949,23 +952,28 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
             allocation_clear_cluster(filename, indirect2_level1_allocation_address);
 
             // Zápis do inode
+            fflush(indirect2_file);
             fseek(indirect2_file, indirect2_level1_address, SEEK_SET);
-            fwrite(&indirect2_level1_allocation_address, sizeof(indirect2_level1_allocation_address), 1, indirect2_file);
+            fwrite(&indirect2_level1_allocation_address, sizeof(int32_t), 1, indirect2_file);
             fflush(indirect2_file);
 
-            // Zápis na VFS
-            inode_write_to_index(filename, inode_ptr->id - 1, inode_ptr);
             log_trace("inode_add_data_address: Hodnota odkazu inode ID=%d indirect2[%d] nastavena na %d \n", inode_ptr->id, indirect2_level1_write_index,
                       indirect2_level1_allocation_address);
         }
+
+        // Uvolnění bufferu pro čtení
+        fflush(indirect2_file);
 
         // Přečtení znovu jako pojistka
         // Nulování paměti
         memset(indirect2_level1_data, 0, sizeof(int32_t));
         // Nastavení místa čtení v souboru
+        fflush(indirect2_file);
         fseek(indirect2_file, indirect2_level1_address, SEEK_SET);
         // Čtení dat
         fread(indirect2_level1_data, sizeof(int32_t), 1, indirect2_file);
+        fflush(indirect2_file);
+
 
         // Povedlo se zapsat
         if(*indirect2_level1_data != 0){
@@ -973,6 +981,7 @@ bool inode_add_data_address(char *filename, struct inode *inode_ptr, int32_t add
             int32_t indirect2_level2_address = *indirect2_level1_data + (indirect2_level2_write_index * sizeof(int32_t));
 
             // Zápis adresy na level 2
+            fflush(indirect2_file);
             fseek(indirect2_file, indirect2_level2_address, SEEK_SET);
             fwrite(&address, sizeof(int32_t), 1, indirect2_file);
             fflush(indirect2_file);

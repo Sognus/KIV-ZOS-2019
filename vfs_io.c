@@ -321,15 +321,22 @@ size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, 
         int32_t free_index = bitmap_find_free_cluster_index(vfs_file->vfs_filename);
         int32_t free_address = bitmap_index_to_cluster_address(vfs_file->vfs_filename, free_index);
 
+        // Označení indexu jako použitý
+        bitmap_set(vfs_file->vfs_filename ,free_index, 1, TRUE);
+
         // Pokus o alokaci - 0 = OK
         allocation_result = inode_add_data_address(vfs_file->vfs_filename, vfs_file->inode_ptr, free_address);
+
+        // Alokace nevyšla
+        if (allocation_result != 0) {
+            log_debug("vfs_write: Nepodaril/y se alokovat data blok/y pro zapis!\n");
+            // Označení failed bitmap indexu jako nevyužitý
+            bitmap_set(vfs_file->vfs_filename, free_index, 1, FALSE);
+            free(superblock_ptr);
+            return -10;
+        }
     }
 
-    // Alokace nevyšla
-    if (allocation_result != 0) {
-        log_debug("vfs_write: Nepodaril/y se alokovat data blok/y pro zapis!\n");
-        return -10;
-    }
 
     // Výpočet v případě zápisu na více databloků
     int32_t skipped_datablocks = temp_offset / cluster_size;
