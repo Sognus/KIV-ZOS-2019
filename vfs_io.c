@@ -95,6 +95,9 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
         return -5;
     }
 
+    // Pocet prectenych byte
+    ssize_t rtn = 0;
+
     int32_t temp_offset = vfs_file->offset;
     int32_t temp_filesize = vfs_file->inode_ptr->file_size;
     int32_t temp_total_read_size = read_item_size * read_item_count;
@@ -145,7 +148,7 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
         // Nastavíme adresu čtení z vfs souboru
         fseek(file, datablock_direct_adress, SEEK_SET);
         // Přečteme data
-        fread(destination, read_item_size, read_item_count, file);
+        rtn += fread(destination, read_item_size, read_item_count, file);
         // Logging
         log_trace("vfs_read: Celkem precteno %d byte z 1 databloku.\n", (read_item_count * read_item_size));
         // Posun offsetu o přečtená data
@@ -181,7 +184,7 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
         // Nastavení offsetu
         fseek(file, datablock_direct_adress, SEEK_SET);
         // Přečtení prvního databloku
-        fread(buffer_seek, first_datablock_can_read, 1, file);
+        rtn += fread(buffer_seek, sizeof(char), first_datablock_can_read, file);
         buffer_seek += first_datablock_can_read;
         read_remaining -= first_datablock_can_read;
 
@@ -197,7 +200,7 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
             // Nastavení offsetu
             fseek(file, curr_datablock_address, SEEK_SET);
             // Přečtení celého data bloku
-            fread(buffer_seek, superblock_ptr->cluster_size, 1, file);
+            rtn += fread(buffer_seek, sizeof(char), superblock_ptr->cluster_size, file);
 
             // Posun na další data blok
             read_remaining -= superblock_ptr->cluster_size;
@@ -217,7 +220,7 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
             // Nastavení offsetu
             fseek(file, curr_datablock_address, SEEK_SET);
             // Přečtení zbylých dat
-            fread(buffer_seek, read_remaining, 1, file);
+            rtn += fread(buffer_seek, sizeof(char), read_remaining, file);
 
             // Posun na konec kvůli ověřování
             buffer_seek += read_remaining;
@@ -243,7 +246,7 @@ size_t vfs_read(void *destination, size_t read_item_size, size_t read_item_count
     // Uvolnění zdrojů
     fclose(file);
     free(superblock_ptr);
-    return 0;
+    return rtn;
 }
 
 /**

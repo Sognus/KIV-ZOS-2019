@@ -1291,14 +1291,13 @@ void cmd_outcp(struct shell *sh, char *command) {
     vfs_seek(source, 0, SEEK_SET);
     fseek(target, 0, SEEK_SET);
 
-    char *buffer = malloc(sizeof(char) * 1);
+    char *buffer = malloc(sizeof(char) * 4096);
     int64_t written = 0;
     while(written < source->inode_ptr->file_size){
-        memset(buffer, 0, sizeof(char));
-        vfs_read(buffer, sizeof(char), 1, source);
-        size_t written_count = fwrite(buffer, sizeof(char), 1, target);
+        memset(buffer, 0, sizeof(char) * 4096);
+        ssize_t vfs_read_count = vfs_read(buffer, sizeof(char), 4096, source);
 
-        if(written_count < 1){
+        if(vfs_read_count < 0){
             printf("PARTIAL WRITE!\n");
             vfs_close(source);
             fclose(target);
@@ -1308,7 +1307,17 @@ void cmd_outcp(struct shell *sh, char *command) {
             return;
         }
 
-        written = written + sizeof(char);
+        size_t written_count = fwrite(buffer, sizeof(char), vfs_read_count, target);
+
+        // Dosažení konce souboru
+        if(vfs_read_count < 1) {
+            break;
+        }
+
+        written = written + written_count;
+        if(written_count % 4096 == 0) {
+            printf("Written out: 4096B (total: %d bytes)\n", written);
+        }
     }
 
     printf("OK\n");
