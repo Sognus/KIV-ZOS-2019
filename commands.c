@@ -487,38 +487,68 @@ void cmd_incp(struct shell *sh, char *command){
 
     if(external == NULL){
         free(first);
+        vfs_close(target);
         printf("FILE NOT FOUND (neni zdroj)\n");
-        NULL;
+        return;
     }
+
+    // Ziskani superbloku ze souboru
+    struct superblock *superblock_ptr = superblock_from_file(sh->vfs_filename);
+
+    if(superblock_ptr == NULL) {
+        vfs_close(target);
+        fclose(external);
+        free(first);
+        printf("COULD NOT READ SUPERBLOCK");
+        return;
+    }
+
 
     vfs_seek(target, 0, SEEK_SET);
     fseek(external, 0, SEEK_SET);
 
-    int64_t written = 0;
-    int c = 0;
-    while ((c = getc(external)) != EOF){
-        int result = vfs_write(&c, 1, 1, target);
-        if(result != 0){
+    // Vytvoření bufferu o velikosti data bloku
+    ssize_t bytes_read = 0;
+    ssize_t bytes_written = 0;
+    int32_t datablock_size = sizeof(char) * superblock_ptr->cluster_size;
+    char *buffer = malloc(datablock_size);
+    memset(buffer, 0, datablock_size);
+
+    // Čteme soubor po clusterech VFS
+    while (TRUE){
+        memset(buffer, 0, datablock_size);
+        bytes_read = fread(buffer, sizeof(char), datablock_size, external);
+
+        // Zastavení čtení souboru pokud nemáme data
+        if(bytes_read < 1) {
+            break;
+        }
+
+        size_t write_result = vfs_write(buffer, bytes_read, 1, target);
+        if(write_result < 0) {
+            printf("PARTIAL WRITE (CODE %zu)\n", write_result);
             vfs_close(target);
             fclose(external);
-            printf("PARTIAL WRITE\n");
+            free(first);
+            free(path_absolute);
+            free(superblock_ptr);
+            free(buffer);
             return;
         }
-        written++;
 
-        if(written % 4096 == 0){
-            printf("4096 Bytes written (%ld total)\n", written);
-        }
-
+        bytes_written += bytes_read;
+        printf("Bytes written: %zd\n", bytes_written);
     }
 
     printf("OK\n");
 
     // Uvolnění zdrojů
+    free(buffer);
     free(path_absolute);
     fclose(external);
     vfs_close(target);
     free(first);
+    free(superblock_ptr);
 }
 
 /**

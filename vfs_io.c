@@ -311,7 +311,7 @@ size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, 
 
     // Kolik databloků bude potřeba po zápisu
     int32_t file_size = vfs_file->inode_ptr->file_size;
-    int32_t data_block_needed = ceil(
+    int32_t data_block_needed = (int32_t)ceil(
             (double) (file_size + temp_total_write_size) / (double) (superblock_ptr->cluster_size));
 
     // Alokujeme dokud můžeme
@@ -359,7 +359,7 @@ size_t vfs_write(void *source, size_t write_item_size, size_t write_item_count, 
     void *write_pointer = source;
 
     // Lze zapisovat do 1 data bloku?
-    if (temp_total_write_size < first_datablock_can_write) {
+    if (temp_total_write_size <= first_datablock_can_write) {
         log_trace("vfs_write: Lze zapisovat vsechna data do prvniho databloku.\n");
 
         // Do kterého databloku budeme zapisovat

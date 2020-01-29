@@ -63,6 +63,9 @@ vfs.dat
 # Random text files
 *.txt
 file
+large
+large-out
+testdata.py
 
 # Dumps
 vgcore.*
