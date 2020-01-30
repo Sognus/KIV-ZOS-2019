@@ -35,7 +35,7 @@
     \includegraphics[width=0.75\linewidth]{fav-logo.pdf}\\
     \vspace{0.5cm}
 %Thesis title
-    {\uppercase{\Large KIV/PC \\ \textbf{Virtuální souborový systém založený na i-uzlech}\par}}
+    {\uppercase{\Large KIV/ZOS \\ \textbf{Virtuální souborový systém založený na i-uzlech}\par}}
     \vspace{3cm}
 %Author's name
     {\Large Jakub Vítek (viteja) - A19B0222P\par}
@@ -53,7 +53,9 @@
 \tableofcontents
 \newpage
 
+\shorthandoff{-}
 \includepdf[pages=-]{./include/zadani.pdf}
+\shorthandon{-}
 
 \section{Aplikace}
 \paragraph{}
@@ -123,7 +125,7 @@ Symbolický link je soubor obsahující řetězec, který je cestou k souboru, n
 \paragraph{}
 Příkazový řádek dovoluje interakci uživatele s virtuálním souborovým systémem. Příkazový řádek je cyklem, který vypíše cestu složku, do které je uživatel právě přepnut (před znakem \textit{>}). Následně je očekáván vstup od uživatele (jeden z příkazů uvedených v zadání). Vstup je zpracován a probíhá ověření, jestli se nejedná o rozpoznaný příkaz. V případě, že je příkaz rozpoznán, zpracovaný vstup od uživatele je předán funkci, která ověří požadované parametry a provede akci. 
 
-\ paragraph{}
+\paragraph{}
 Seznam příkazů lze vidět v zadání práce. K těmto příkazům byl navíc doplněn příkaz exit, jež bezpečně ukončí program (ukončení lze také provést zkratkou ctrl+c [SIGINT] ve chvíli kdy příkazový řádek čeká na vstup) 
 
 \newpage
